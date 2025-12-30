@@ -12,13 +12,15 @@ console.log(`        Commit: ${commit}`);
 console.log(`        Date:   ${date}`);
 
 // 3. Run Bun Compile
+const isWindows = process.platform === "win32";
+const outfile = isWindows ? "dist/uppsyncd.exe" : "dist/uppsyncd";
 const buildProc = spawn([
     "bun", "build",
     "--compile",
     "--minify",
     "--sourcemap=none",
     "src/index.ts",
-    "--outfile", "dist/uppsyncd",
+    "--outfile", outfile,
     "--define", `process.env.GIT_COMMIT="${commit}"`,
     "--define", `process.env.BUILD_DATE="${date}"`
 ], {
@@ -28,7 +30,7 @@ const buildProc = spawn([
 const exitCode = await buildProc.exited;
 
 if (exitCode === 0) {
-    console.log("Success: Binary created at dist/uppsyncd");
+    console.log(`Success: Binary created at ${outfile}`);
 } else {
     console.error("Error: Build failed");
     process.exit(exitCode);
