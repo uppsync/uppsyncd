@@ -24,12 +24,10 @@ let filename: string;
 
 if (envOutfile) {
     outfile = envOutfile;
-
-    // AUTO-FIX: Append .exe for Windows if missing
+    // Auto-Fix: Append .exe for Windows if missing
     if (target?.includes("windows") && !outfile.endsWith(".exe")) {
         outfile += ".exe";
     }
-
     filename = basename(outfile);
 } else {
     // Local dev fallback
@@ -77,8 +75,6 @@ if (target?.includes("darwin") || filename.includes("darwin")) {
         "tar",
         "-czf",
         basename(tarFile),
-        "-C",
-        dir,
         rawBinary
     ], {
         cwd: dir,
