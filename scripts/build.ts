@@ -1,5 +1,6 @@
-import { spawn, file, write, CryptoHasher } from "bun";
-import { basename } from "node:path"; // Import basename for checksum generation
+import { spawn } from "bun";
+import { basename, dirname } from "node:path";
+import { unlink } from "node:fs/promises";
 
 // 1. Get Git Commit Hash
 const gitProc = spawn(["git", "rev-parse", "HEAD"], { stdout: "pipe" });
@@ -12,7 +13,7 @@ const date = new Date().toISOString();
 const target = process.env.TARGET;
 const envOutfile = process.env.OUTFILE;
 
-console.log(`[BUILD] Starting build process...`);
+console.log(`[BUILD] Starting build process`);
 console.log(`        Commit: ${commit}`);
 console.log(`        Date:   ${date}`);
 console.log(`        Target: ${target || "Auto-detect (Host)"}`);
@@ -22,11 +23,16 @@ let outfile: string;
 let filename: string;
 
 if (envOutfile) {
-    // Case A: CI provides explicit path (e.g. dist/uppsyncd-linux-amd64)
     outfile = envOutfile;
+
+    // AUTO-FIX: Append .exe for Windows if missing
+    if (target?.includes("windows") && !outfile.endsWith(".exe")) {
+        outfile += ".exe";
+    }
+
     filename = basename(outfile);
 } else {
-    // Case B: Local dev default (dist/uppsyncd or dist/uppsyncd.exe)
+    // Local dev fallback
     const isWindows = target ? target.includes("windows") : process.platform === "win32";
     filename = isWindows ? "uppsyncd.exe" : "uppsyncd";
     outfile = `dist/${filename}`;
@@ -59,28 +65,40 @@ if (exitCode !== 0) {
     process.exit(exitCode);
 }
 
-// 6. Generate Checksum (SHA256)
-console.log(`[HASH]  Generating checksum...`);
+// 6. Post-Process: Compress for macOS (.tar.gz)
+if (target?.includes("darwin") || filename.includes("darwin")) {
+    console.log(`[TAR]   Compressing for macOS...`);
 
-try {
-    const binaryFile = file(outfile);
-    const buffer = await binaryFile.arrayBuffer();
+    const tarFile = `${outfile}.tar.gz`;
+    const dir = dirname(outfile);
+    const rawBinary = basename(outfile);
 
-    // Calculate SHA256
-    const hasher = new CryptoHasher("sha256");
-    hasher.update(buffer);
-    const hash = hasher.digest("hex");
+    const tarProc = spawn([
+        "tar",
+        "-czf",
+        basename(tarFile),
+        "-C",
+        dir,
+        rawBinary
+    ], {
+        cwd: dir,
+        stdio: ["ignore", "inherit", "inherit"]
+    });
 
-    // Write to .sha256 file
-    // Content Format: "HASH  FILENAME" (Standard Linux format)
-    const checksumContent = `${hash}  ${filename}\n`;
-    await write(`${outfile}.sha256`, checksumContent);
+    const tarExit = await tarProc.exited;
+    if (tarExit !== 0) {
+        console.error(`[ERROR] Tar compression failed`);
+        process.exit(tarExit);
+    }
 
-    console.log(`[DONE]  Build successful.`);
-    console.log(`        Binary:   ${outfile}`);
-    console.log(`        Checksum: ${outfile}.sha256`);
+    try {
+        await unlink(outfile);
+    } catch (e) {
+        console.warn(`[WARN]  Could not delete raw binary: ${outfile}`);
+    }
 
-} catch (e) {
-    console.error(`[ERROR] Failed to generate checksum:`, e);
-    process.exit(1);
+    outfile = tarFile;
 }
+
+console.log(`[DONE]  Build successful.`);
+console.log(`        Artifact: ${outfile}`);

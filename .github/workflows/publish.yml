@@ -20,7 +20,7 @@ jobs:
             arch: "amd64"
             bun_target: "bun-linux-x64"
             asset_name: "uppsyncd-linux-amd64"
-            package_deb: true  # Toggle for .deb building
+            package_deb: true
 
           - os: "linux"
             arch: "arm64"
@@ -32,20 +32,20 @@ jobs:
           - os: "windows"
             arch: "amd64"
             bun_target: "bun-windows-x64"
-            asset_name: "uppsyncd-windows-amd64.exe" # Needs .exe
+            asset_name: "uppsyncd-windows-amd64"
             package_deb: false
 
-          # --- MACOS (DARWIN) ---
+          # --- MACOS ---
           - os: "darwin"
-            arch: "amd64" # Intel
+            arch: "amd64"
             bun_target: "bun-darwin-x64"
-            asset_name: "uppsyncd-macos-amd64"
+            asset_name: "uppsyncd-darwin-amd64"
             package_deb: false
 
           - os: "darwin"
-            arch: "arm64" # Apple Silicon
+            arch: "arm64"
             bun_target: "bun-darwin-arm64"
-            asset_name: "uppsyncd-macos-arm64"
+            asset_name: "uppsyncd-darwin-arm64"
             package_deb: false
 
     steps:
