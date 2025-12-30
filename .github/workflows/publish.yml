@@ -59,7 +59,29 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v6
         with:
-          name: deb-${{ matrix.arch }}
-          path: packages/*.deb
+          name: assets-${{ matrix.arch }}
+          path: |
+            dist/${{ matrix.asset_name }}
+            packages/*.deb
           retention-days: 1
+
+  release:
+    name: Create GitHub Release
+    needs: package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v6
+        with:
+          pattern: assets-*
+          path: dist
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            dist/*
 
