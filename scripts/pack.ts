@@ -1,46 +1,49 @@
 import { spawn, file } from "bun";
 import { copyFile, unlink } from "node:fs/promises";
+import { basename } from "node:path";
 
-// Configuration
-const NFPM_EXPECTED_PATH = "dist/uppsyncd";
+// 1. Configuration
+const NFPM_EXPECTED_PATH = "dist/uppsyncd"; // Must match 'src' in nfpm.yaml
 const OUTPUT_DIR = "dist";
 
-// Environment Variables
+// 2. Read Environment Variables
 const rawVersion = process.env.VERSION || "0.0.0-dev";
 const arch = process.env.ARCH || "amd64";
 const inputBinary = process.env.OUTFILE || NFPM_EXPECTED_PATH;
-const assetName = process.env.ASSET_NAME || `uppsyncd-linux-${arch}`;
 
-// Sanitize
+// Derive the package name from the binary filename (e.g., uppsyncd-linux-amd64 -> uppsyncd-linux-amd64.deb)
+const baseName = basename(inputBinary);
+const outputDeb = `${OUTPUT_DIR}/${baseName}.deb`;
+
+// 3. Sanitize Version (Debian requires X.Y.Z, no 'v')
 const version = rawVersion.replace(/^v/, "");
 
 console.log(`[PACK] Starting Debian packaging`);
 console.log(`       Input:   ${inputBinary}`);
-console.log(`       Output:  ${assetName}.deb`);
+console.log(`       Output:  ${outputDeb}`);
+console.log(`       Version: ${version}`);
+console.log(`       Arch:    ${arch}`);
 
 async function main() {
-    // 1. Pre-flight Check
+    // 4. Pre-flight Check
     const binaryFile = file(inputBinary);
     if (!(await binaryFile.exists())) {
-        console.error(`[ERROR] Input binary not found: ${inputBinary}`);
+        console.error(`[ERROR] Input binary not found at: ${inputBinary}`);
         process.exit(1);
     }
 
-    // 2. Prepare NFPM source
-    // Copy specific binary to generic name 'dist/uppsyncd'
+    // 5. Prepare NFPM source
+    // Copy specific binary to generic name 'dist/uppsyncd' so NFPM can find it based on nfpm.yaml
     if (inputBinary !== NFPM_EXPECTED_PATH) {
         await copyFile(inputBinary, NFPM_EXPECTED_PATH);
     }
 
-    // 3. Define Output File
-    const debFile = `${OUTPUT_DIR}/${assetName}.deb`;
-
     try {
-        // 4. Run NFPM
+        // 6. Run NFPM
         const proc = spawn([
             "nfpm", "pkg",
             "--packager", "deb",
-            "--target", debFile
+            "--target", outputDeb
         ], {
             stdio: ["inherit", "inherit", "inherit"],
             env: {
@@ -53,7 +56,7 @@ async function main() {
         const exitCode = await proc.exited;
 
         if (exitCode === 0) {
-            console.log(`[SUCCESS] Package created: ${debFile}`);
+            console.log(`[SUCCESS] Package created: ${outputDeb}`);
         } else {
             console.error(`[ERROR] NFPM exited with code ${exitCode}`);
             process.exit(exitCode);
@@ -63,12 +66,11 @@ async function main() {
         console.error(`[ERROR] Execution failed:`, error);
         process.exit(1);
     } finally {
-        // 5. CLEANUP: Delete the generic 'dist/uppsyncd' file
-        // This ensures it doesn't get uploaded to GitHub Releases
+        // 7. Cleanup
+        // Remove the temporary generic file to keep dist/ clean
         if (inputBinary !== NFPM_EXPECTED_PATH) {
             try {
                 await unlink(NFPM_EXPECTED_PATH);
-                console.log(`[CLEAN]   Removed temporary file: ${NFPM_EXPECTED_PATH}`);
             } catch (e) {
                 // Ignore cleanup errors
             }

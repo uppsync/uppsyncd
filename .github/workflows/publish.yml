@@ -10,17 +10,43 @@ permissions:
 
 jobs:
   package:
-    name: Package ${{ matrix.arch }}
+    name: Package ${{ matrix.os }} ${{ matrix.arch }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
-          - arch: "amd64"
+          # --- LINUX ---
+          - os: "linux"
+            arch: "amd64"
             bun_target: "bun-linux-x64"
             asset_name: "uppsyncd-linux-amd64"
-          - arch: "arm64"
+            package_deb: true  # Toggle for .deb building
+
+          - os: "linux"
+            arch: "arm64"
             bun_target: "bun-linux-arm64"
             asset_name: "uppsyncd-linux-arm64"
+            package_deb: true
+
+          # --- WINDOWS ---
+          - os: "windows"
+            arch: "amd64"
+            bun_target: "bun-windows-x64"
+            asset_name: "uppsyncd-windows-amd64.exe" # Needs .exe
+            package_deb: false
+
+          # --- MACOS (DARWIN) ---
+          - os: "darwin"
+            arch: "amd64" # Intel
+            bun_target: "bun-darwin-x64"
+            asset_name: "uppsyncd-macos-amd64"
+            package_deb: false
+
+          - os: "darwin"
+            arch: "arm64" # Apple Silicon
+            bun_target: "bun-darwin-arm64"
+            asset_name: "uppsyncd-macos-arm64"
+            package_deb: false
 
     steps:
       - uses: actions/checkout@v6
@@ -40,23 +66,20 @@ jobs:
         run: bun run build
 
       - name: Build .deb Package
+        if: matrix.package_deb == true
         env:
           ARCH: ${{ matrix.arch }}
-          # Use Tag name (v1.0.0) or dummy version for nightly
           VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '0.0.0-nightly' }}
-          # Input: The binary we just built
           OUTFILE: dist/${{ matrix.asset_name }}
-          # Output: The name of the .deb (and the asset alias)
-          ASSET_NAME: ${{ matrix.asset_name }}
         run: bun run pack
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v6
         with:
-          name: assets-${{ matrix.arch }}
-          path: |
-            dist/*
+          name: assets-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*
           retention-days: 1
+          if-no-files-found: ignore
 
   release:
     name: Create GitHub Release
