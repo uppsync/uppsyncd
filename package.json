@@ -5,10 +5,13 @@
     "uppsyncd": "./dist/uppsyncd"
   },
   "scripts": {
-    "build": "bun run scripts/build.ts"
+    "build": "bun run scripts/build.ts",
+    "package": "bun run scripts/package.ts",
+    "repo": "bun run scripts/repo.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@goreleaser/nfpm": "^2.44.1"
   },
   "peerDependencies": {
     "typescript": "^5"

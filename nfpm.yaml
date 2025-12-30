@@ -1,0 +1,20 @@
+name: "uppsyncd"
+arch: "${ARCH}"
+platform: "linux"
+version: "${VERSION}"
+section: "admin"
+priority: "optional"
+maintainer: "Uppsync <support@uppsync.com>"
+description: "Uppsync's command-line tool and agent"
+vendor: "Uppsync"
+homepage: "https://uppsync.com"
+license: "MIT"
+
+contents:
+  - src: "./dist/uppsyncd"
+    dst: "/usr/bin/uppsyncd"
+    file_info:
+      mode: 0755
+
+deb:
+  compression: "gzip"

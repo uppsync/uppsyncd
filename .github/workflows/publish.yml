@@ -1,0 +1,51 @@
+name: Publish APT Repo
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ "v*" ]
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Package ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: "amd64"
+            bun_target: "bun-linux-x64"
+          - arch: "arm64"
+            bun_target: "bun-linux-arm64"
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Compile Binary
+        env:
+          TARGET: ${{ matrix.bun_target }}
+        run: bun run build
+
+      - name: Build .deb Package
+        env:
+          ARCH: ${{ matrix.arch }}
+          VERSION: ${{ github.ref_name }} # e.g. v1.0.0 or main
+        run: bun run package
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: deb-${{ matrix.arch }}
+          path: packages/*.deb
+          retention-days: 1
+
