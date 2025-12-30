@@ -18,3 +18,7 @@ contents:
 
 deb:
   compression: "gzip"
+
+rpm:
+  compression: "gzip"
+  group: "System/Monitoring"
