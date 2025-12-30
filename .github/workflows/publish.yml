@@ -67,7 +67,9 @@ jobs:
         uses: actions/download-artifact@v6
         with:
           pattern: assets-*
-          path: dist
+          path: |
+            dist
+            packages
           merge-multiple: true
 
       - name: Create Release
@@ -76,4 +78,5 @@ jobs:
           draft: true
           files: |
             dist/*
+            packages/*
 
