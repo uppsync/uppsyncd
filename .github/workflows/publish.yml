@@ -3,6 +3,7 @@ name: Publish APT Repo
 on:
   push:
     branches: [ main ]
+    branches: [ "main" ]
     tags: [ "v*" ]
 
 permissions:
@@ -17,8 +18,10 @@ jobs:
         include:
           - arch: "amd64"
             bun_target: "bun-linux-x64"
+            asset_name: "uppsyncd-linux-amd64"
           - arch: "arm64"
             bun_target: "bun-linux-arm64"
+            asset_name: "uppsyncd-linux-arm64"
 
     steps:
       - uses: actions/checkout@v6
@@ -34,6 +37,7 @@ jobs:
       - name: Compile Binary
         env:
           TARGET: ${{ matrix.bun_target }}
+          OUTFILE: dist/${{ matrix.asset_name }}
         run: bun run build
 
       - name: Build .deb Package
@@ -41,6 +45,11 @@ jobs:
           ARCH: ${{ matrix.arch }}
           VERSION: ${{ github.ref_name }} # e.g. v1.0.0 or main
         run: bun run package
+          OUTFILE: dist/${{ matrix.asset_name }}
+          # Use Tag name (v1.0.0) or dummy version for nightly
+          VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '0.0.0-nightly' }}
+        run: |
+          bun run package
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v6
