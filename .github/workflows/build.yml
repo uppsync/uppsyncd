@@ -33,3 +33,4 @@ jobs:
           name: uppsyncd-${{ matrix.os }}
           path: dist/uppsyncd* # Matches 'uppsyncd' (Linux/Mac) and 'uppsyncd.exe' (Windows)
           if-no-files-found: error
+          retention-days: 1
