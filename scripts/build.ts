@@ -1,4 +1,5 @@
 import { spawn, file, write, CryptoHasher } from "bun";
+import { basename } from "node:path"; // Import basename for checksum generation
 
 // 1. Get Git Commit Hash
 const gitProc = spawn(["git", "rev-parse", "HEAD"], { stdout: "pipe" });
@@ -7,8 +8,9 @@ const commit = (await new Response(gitProc.stdout).text()).trim();
 // 2. Get Current Date
 const date = new Date().toISOString();
 
-// 3. Detect Target
+// 3. Detect Inputs
 const target = process.env.TARGET;
+const envOutfile = process.env.OUTFILE;
 
 console.log(`[BUILD] Starting build process...`);
 console.log(`        Commit: ${commit}`);
@@ -16,9 +18,21 @@ console.log(`        Date:   ${date}`);
 console.log(`        Target: ${target || "Auto-detect (Host)"}`);
 
 // 4. Determine Output Filename
-const isWindows = target ? target.includes("windows") : process.platform === "win32";
-const filename = isWindows ? "uppsyncd.exe" : "uppsyncd";
-const outfile = `dist/${filename}`;
+let outfile: string;
+let filename: string;
+
+if (envOutfile) {
+    // Case A: CI provides explicit path (e.g. dist/uppsyncd-linux-amd64)
+    outfile = envOutfile;
+    filename = basename(outfile);
+} else {
+    // Case B: Local dev default (dist/uppsyncd or dist/uppsyncd.exe)
+    const isWindows = target ? target.includes("windows") : process.platform === "win32";
+    filename = isWindows ? "uppsyncd.exe" : "uppsyncd";
+    outfile = `dist/${filename}`;
+}
+
+console.log(`        Output: ${outfile}`);
 
 // 5. Run Bun Compile
 const args = [
@@ -57,7 +71,8 @@ try {
     hasher.update(buffer);
     const hash = hasher.digest("hex");
 
-    // Write to .sha256 file (Standard format: "HASH  FILENAME")
+    // Write to .sha256 file
+    // Content Format: "HASH  FILENAME" (Standard Linux format)
     const checksumContent = `${hash}  ${filename}\n`;
     await write(`${outfile}.sha256`, checksumContent);
 
