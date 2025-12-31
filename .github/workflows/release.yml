@@ -1,4 +1,4 @@
-name: Publish Binaries
+name: Release & Publish
 
 on:
   push:
@@ -89,7 +89,7 @@ jobs:
           retention-days: 1
           if-no-files-found: ignore
 
-  release:
+  github-release:
     name: GitHub Release
     needs: package
     runs-on: ubuntu-latest
@@ -108,8 +108,8 @@ jobs:
           draft: true
           files: dist/*
 
-  publish-repo:
-    name: Update APT Repository
+  publish-apt:
+    name: APT Repository
     needs: package
     runs-on: ubuntu-latest
 
