@@ -146,7 +146,12 @@ jobs:
             gpg-connect-agent reloadagent /bye
 
             # Get the keygrip of the imported key
-            KEYGRIP=$(gpg --list-secret-keys --with-colons | grep -A 1 "^sec" | grep "^grp" | cut -d: -f10 | head -n 1)
+            KEYGRIP=$(gpg --list-secret-keys --with-colons | grep "^grp" | cut -d: -f10 | head -n 1)
+
+            if [ -z "$KEYGRIP" ]; then
+              echo "::error::Unable to find GPG Keygrip."
+              exit 1
+            fi
 
             # Find and run gpg-preset-passphrase
             PRESET_CMD=$(find /usr/lib /usr/libexec -name gpg-preset-passphrase -print -quit 2>/dev/null)
