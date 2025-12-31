@@ -127,7 +127,7 @@ jobs:
       - name: Download All Artifacts
         uses: actions/download-artifact@v6
         with:
-          pattern: assets-*
+          pattern: assets-linux-*
           path: dist
           merge-multiple: true
 
@@ -144,11 +144,9 @@ jobs:
       - name: Build Repository Index
         env:
           CODENAME: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'unstable' }}
+          GPG_KEY_ID: ${{ steps.setup_gpg.outputs.GPG_KEY_ID }}
+          REPO_OWNER: ${{ github.repository_owner }}
         run: bun run repo:deb
-
-      - name: Export GPG Public Key
-        run: |
-          gpg --armor --export "${{ steps.setup_gpg.outputs.GPG_KEY_ID }}" > ${{ github.repository_owner }}-main.gpg
 
       - name: Publish to S3
         env:
@@ -178,7 +176,7 @@ jobs:
       - name: Download All Artifacts
         uses: actions/download-artifact@v6
         with:
-          pattern: assets-*
+          pattern: assets-linux-*
           path: dist
           merge-multiple: true
 
@@ -191,11 +189,6 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: bun run setup:gpg
-
-      - name: Import GPG to RPM
-        run: |
-          gpg --export -a > public.key
-          rpm --import public.key
 
       - name: Build Repository Index
         env:

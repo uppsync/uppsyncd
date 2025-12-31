@@ -9,15 +9,17 @@ const INPUT_DIR = "dist"; // Where GitHub Actions downloaded the artifacts
 
 // Default to 'stable', but allow override (e.g., 'unstable' for nightly)
 const CODENAME = process.env.CODENAME || "stable";
+const GPG_KEY_ID = process.env.GPG_KEY_ID;
+const REPO_OWNER = process.env.REPO_OWNER || "uppsync";
 
 const DISTRIBUTION_CONFIG = `
-Origin: uppsyncd
-Label: uppsyncd
+Origin: ${REPO_OWNER}
+Label: ${REPO_OWNER}
 Codename: ${CODENAME}
 Architectures: amd64 arm64
 Components: main
 Description: Uppsync Monitoring Agent
-SignWith: default
+SignWith: ${GPG_KEY_ID || "default"}
 `;
 
 async function main() {
@@ -77,6 +79,14 @@ async function main() {
         // Use glob pattern directly in the shell command
         await $`reprepro -V --basedir ${REPO_DIR} includedeb ${CODENAME} ${INPUT_DIR}/*.deb`;
         console.log(`[SUCCESS] Repository generated in '${REPO_DIR}/'`);
+
+        // --- GPG Export ---
+        if (GPG_KEY_ID) {
+            const keyFile = `${REPO_OWNER}-main.gpg`;
+            console.log(`[GPG]     Exporting public key to ${keyFile}...`);
+            await $`gpg --armor --export ${GPG_KEY_ID} > ${keyFile}`;
+        }
+
     } catch (e: any) {
         console.error(`[ERROR] Reprepro failed with exit code ${e.exitCode}`);
         process.exit(e.exitCode || 1);

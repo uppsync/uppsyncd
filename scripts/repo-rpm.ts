@@ -34,6 +34,12 @@ if (rpmFiles.length === 0) {
 const GPG_KEY_ID = process.env.GPG_KEY_ID;
 if (GPG_KEY_ID) {
     console.log(`[RPM] Signing packages with Key ID: ${GPG_KEY_ID}`);
+
+    // Import public key into RPM database (required for signing context)
+    await $`gpg --export -a > public.key`;
+    await $`rpm --import public.key`;
+    await $`rm public.key`;
+
     const rpmMacro = `%_signature gpg
 %_gpg_path /root/.gnupg
 %_gpg_name ${GPG_KEY_ID}
@@ -61,8 +67,21 @@ console.log(`[RPM] Running createrepo_c on '${TARGET_DIR}'...`);
 try {
     await $`createrepo_c ${TARGET_DIR}`;
     console.log("[RPM] Repository index created successfully.");
+
+    // --- GPG SIGNING (Metadata) ---
+    if (GPG_KEY_ID) {
+        console.log(`[RPM] Signing repository metadata (repomd.xml)...`);
+        const repodataDir = join(TARGET_DIR, "repodata");
+        const repomd = join(repodataDir, "repomd.xml");
+        const repomdAsc = join(repodataDir, "repomd.xml.asc");
+
+        // Sign the metadata file
+        await $`gpg --batch --yes --detach-sign --armor --local-user ${GPG_KEY_ID} --output ${repomdAsc} ${repomd}`;
+    }
+    // ------------------------------
+
 } catch (err) {
-    console.error(`[RPM] Failed to run createrepo_c. Is it installed?`);
+    console.error(`[RPM] Failed to run createrepo_c or gpg signing.`);
     console.error(err);
     process.exit(1);
 }
@@ -72,20 +91,23 @@ try {
 const repoFileName = `${REPO_NAME}.repo`;
 const repoFilePath = join(REPO_ROOT, repoFileName);
 
+// If we have a key, we enforce checks. If not, we disable them.
+const checkStatus = GPG_KEY_ID ? "1" : "0";
+
 const repoContent = `[${REPO_NAME}]
 name=Uppsync Monitoring Agent
 baseurl=https://pkg.uppsync.com/${REPO_NAME}/rpm/stable
 enabled=1
-gpgcheck=1
-repo_gpgcheck=0
+gpgcheck=${checkStatus}
+repo_gpgcheck=${checkStatus}
 gpgkey=https://pkg.uppsync.com/${REPO_NAME}-main.gpg
 
 [${REPO_NAME}-unstable]
 name=Uppsync Monitoring Agent (Unstable)
 baseurl=https://pkg.uppsync.com/${REPO_NAME}/rpm/unstable
 enabled=0
-gpgcheck=1
-repo_gpgcheck=0
+gpgcheck=${checkStatus}
+repo_gpgcheck=${checkStatus}
 gpgkey=https://pkg.uppsync.com/${REPO_NAME}-main.gpg
 `;
 
