@@ -1,0 +1,29 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Package
+        Name="Uppsync Monitoring Agent"
+        Manufacturer="Uppsync"
+        Version="$(var.Version)"
+        UpgradeCode="55FF57AC-2025-4A11-9FFF-57AC00000001"
+        Compressed="yes"
+        Scope="perMachine">
+
+        <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
+        <MediaTemplate EmbedCab="yes" />
+
+        <StandardDirectory Id="ProgramFiles64Folder">
+            <Directory Id="INSTALLFOLDER" Name="Uppsync">
+                <Component Id="MainExecutable" Guid="*">
+                    <File Id="UppsyncdEXE" Source="$(var.BinaryPath)" KeyPath="yes" />
+
+                    <!-- Add to PATH so they can type 'uppsyncd' in PowerShell -->
+                    <Environment Id="PATH" Name="PATH" Value="[INSTALLFOLDER]" Permanent="no"
+                        Part="last" Action="set" System="yes" />
+                </Component>
+            </Directory>
+        </StandardDirectory>
+
+        <Feature Id="Main" Title="Uppsync Agent" Level="1">
+            <ComponentRef Id="MainExecutable" />
+        </Feature>
+    </Package>
+</Wix>

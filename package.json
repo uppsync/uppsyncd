@@ -6,7 +6,8 @@
   },
   "scripts": {
     "build": "bun run scripts/build.ts",
-    "pack": "bun run scripts/pack.ts",
+    "pack:deb": "bun run scripts/pack-deb.ts",
+    "pack:msi": "bun run scripts/pack-msi.ts",
     "repo": "bun run scripts/repo.ts",
     "publish": "bun run scripts/publish.ts"
   },

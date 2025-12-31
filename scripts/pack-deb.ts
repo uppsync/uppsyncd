@@ -8,10 +8,9 @@ const FORMATS = ["deb", "rpm"];
 
 // 2. Read Environment Variables
 const rawVersion = process.env.VERSION || "0.0.0-dev";
-// This is the "Debian/Standard" arch passed from GitHub Matrix (amd64, arm64)
+// The input architecture is expected to be Debian-style (amd64, arm64)
 const inputArch = process.env.ARCH || "amd64";
 const inputBinary = process.env.OUTFILE || NFPM_EXPECTED_PATH;
-const assetName = process.env.ASSET_NAME || `uppsyncd-linux-${inputArch}`;
 
 // 3. Sanitize Version
 const version = rawVersion.replace(/^v/, "");
@@ -30,6 +29,7 @@ async function main() {
     }
 
     // 5. Standardize Binary Name
+    // NFPM expects the binary at the specific path defined in nfpm.yaml
     if (inputBinary !== NFPM_EXPECTED_PATH) {
         await copyFile(inputBinary, NFPM_EXPECTED_PATH);
     }
@@ -38,17 +38,17 @@ async function main() {
     for (const fmt of FORMATS) {
 
         // --- ARCHITECTURE TRANSLATION LOGIC ---
+        // Debian uses amd64/arm64. RPM uses x86_64/aarch64.
         let outputArch = inputArch;
 
-        // RPM uses x86_64 and aarch64
         if (fmt === "rpm") {
             if (inputArch === "amd64") outputArch = "x86_64";
             if (inputArch === "arm64") outputArch = "aarch64";
         }
 
-        // Define Output Filename: uppsyncd-linux-amd64.deb OR uppsyncd-linux-x86_64.rpm
-        // We replace the arch in the asset name to match the package standard
-        const pkgName = assetName.replace(inputArch, outputArch);
+        // Define Output Filename: uppsyncd-linux-{arch}.{ext}
+        // Example: uppsyncd-linux-amd64.deb or uppsyncd-linux-x86_64.rpm
+        const pkgName = `uppsyncd-linux-${outputArch}`;
         const pkgFile = `${OUTPUT_DIR}/${pkgName}.${fmt}`;
 
         console.log(`[NFPM] Generating ${fmt} (${outputArch})...`);
@@ -63,7 +63,7 @@ async function main() {
                 env: {
                     ...process.env,
                     VERSION: version,
-                    // Pass the translated arch to NFPM so the internal metadata is correct
+                    // Pass the translated arch to NFPM so internal metadata is correct
                     ARCH: outputArch
                 }
             });
@@ -84,8 +84,9 @@ async function main() {
     }
 
     // 7. Cleanup
+    // Remove the temporary generic file to keep dist/ clean
     if (inputBinary !== NFPM_EXPECTED_PATH) {
-        try { await unlink(NFPM_EXPECTED_PATH); } catch (e) {}
+        try { await unlink(NFPM_EXPECTED_PATH); } catch (e) { }
     }
 }
 
