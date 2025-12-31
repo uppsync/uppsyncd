@@ -1,8 +1,6 @@
 name: Build & Test Package
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
 
 jobs:
@@ -26,3 +24,10 @@ jobs:
 
       - name: Build Binary
         run: bun run build
+
+      - name: Upload Binary
+        uses: actions/upload-artifact@v6
+        with:
+          name: uppsyncd-${{ matrix.os }}
+          path: dist/uppsyncd* # Matches 'uppsyncd' (Linux/Mac) and 'uppsyncd.exe' (Windows)
+          if-no-files-found: error
