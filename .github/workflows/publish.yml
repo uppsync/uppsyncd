@@ -62,7 +62,7 @@ jobs:
           bun-version: latest
 
       - name: Install Dependencies
-        run: bun install --linker isolated
+        run: bun install
 
       - name: Setup WiX
         if: contains(matrix.pack, 'msi')
