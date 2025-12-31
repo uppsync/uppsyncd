@@ -1,5 +1,5 @@
 import { spawn, file } from "bun";
-import { mkdir } from "node:fs/promises";
+import { mkdir, unlink } from "node:fs/promises";
 import { basename } from "node:path";
 
 // 1. Configuration
@@ -18,7 +18,6 @@ const winVersion = /^\d+\.\d+\.\d+$/.test(cleanVersion)
     : "0.0.0.0";
 
 // 4. Pre-flight Check (Auto-Fix .exe)
-// If "dist/uppsyncd" doesn't exist, check "dist/uppsyncd.exe"
 const f = file(inputBinary);
 if (!(await f.exists())) {
     if (await file(inputBinary + ".exe").exists()) {
@@ -31,9 +30,9 @@ if (!(await f.exists())) {
 }
 
 // 5. Output Filename
-// dist/uppsyncd-windows-amd64.exe -> dist/uppsyncd-windows-amd64.msi
 const baseName = basename(inputBinary, ".exe");
 const msiFile = `${OUTPUT_DIR}/${baseName}.msi`;
+const pdbFile = `${OUTPUT_DIR}/${baseName}.wixpdb`;
 
 console.log(`[PACK-MSI] Starting Windows MSI build`);
 console.log(`           Input:    ${inputBinary}`);
@@ -67,6 +66,15 @@ async function main() {
 
         if (exitCode === 0) {
             console.log(`[SUCCESS] MSI created: ${msiFile}`);
+
+            // Cleanup the debug file (.wixpdb)
+            try {
+                await unlink(pdbFile);
+                console.log(`[CLEAN]   Removed debug symbols: ${pdbFile}`);
+            } catch (e) {
+                // Ignore if file doesn't exist
+            }
+
         } else {
             console.error(`[ERROR] WiX failed with code ${exitCode}`);
             process.exit(exitCode);
