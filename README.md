@@ -68,14 +68,12 @@
 1. **Download the installer:**
    [Download MSI](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-windows-amd64.msi)
 
-2. **Install via PowerShell:**
-   ```powershell
-   msiexec /i https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-windows-amd64.msi /qn
-   ```
+2. **Install:**
+   Double-click the downloaded `.msi` file and follow the prompts.
 
 3. **Verify installation:**
-   ```powershell
-   Get-Service uppsyncd
+   ```cmd
+   sc query uppsyncd
    ```
 
 ### macOS
