@@ -1,4 +1,4 @@
-import { spawn, write } from "bun";
+import { $, write } from "bun";
 import { mkdir, readdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -73,20 +73,14 @@ async function main() {
     // We use 'sh -c' to allow wildcard expansion (*.deb)
     console.log(`[EXEC]    Running reprepro includedeb...`);
 
-    const command = `reprepro -V --basedir ${REPO_DIR} includedeb ${CODENAME} ${INPUT_DIR}/*.deb`;
-
-    const proc = spawn(["sh", "-c", command], {
-        stdio: ["inherit", "inherit", "inherit"]
-    });
-
-    const exitCode = await proc.exited;
-
-    if (exitCode !== 0) {
-        console.error(`[ERROR] Reprepro failed with exit code ${exitCode}`);
-        process.exit(exitCode);
+    try {
+        // Use glob pattern directly in the shell command
+        await $`reprepro -V --basedir ${REPO_DIR} includedeb ${CODENAME} ${INPUT_DIR}/*.deb`;
+        console.log(`[SUCCESS] Repository generated in '${REPO_DIR}/'`);
+    } catch (e: any) {
+        console.error(`[ERROR] Reprepro failed with exit code ${e.exitCode}`);
+        process.exit(e.exitCode || 1);
     }
-
-    console.log(`[SUCCESS] Repository generated in '${REPO_DIR}/'`);
 }
 
 main();

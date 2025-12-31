@@ -1,4 +1,4 @@
-import { spawn, file } from "bun";
+import { $, file } from "bun";
 import { mkdir, unlink } from "node:fs/promises";
 import { basename } from "node:path";
 
@@ -52,36 +52,21 @@ async function main() {
 
     // Run WiX
     try {
-        const proc = spawn([
-            "wix", "build",
-            "-o", msiFile,
-            `-d`, `Version=${winVersion}`,
-            `-d`, `BinaryPath=${inputBinary}`,
-            WIX_TEMPLATE
-        ], {
-            stdio: ["inherit", "inherit", "inherit"]
-        });
+        await $`wix build -o ${msiFile} -d Version=${winVersion} -d BinaryPath=${inputBinary} ${WIX_TEMPLATE}`;
 
-        const exitCode = await proc.exited;
+        console.log(`[SUCCESS] MSI created: ${msiFile}`);
 
-        if (exitCode === 0) {
-            console.log(`[SUCCESS] MSI created: ${msiFile}`);
-
-            // Cleanup the debug file (.wixpdb)
-            try {
-                await unlink(pdbFile);
-                console.log(`[CLEAN]   Removed debug symbols: ${pdbFile}`);
-            } catch (e) {
-                // Ignore if file doesn't exist
-            }
-
-        } else {
-            console.error(`[ERROR] WiX failed with code ${exitCode}`);
-            process.exit(exitCode);
+        // Cleanup the debug file (.wixpdb)
+        try {
+            await unlink(pdbFile);
+            console.log(`[CLEAN]   Removed debug symbols: ${pdbFile}`);
+        } catch (e) {
+            // Ignore if file doesn't exist
         }
-    } catch (e) {
-        console.error(`[ERROR] Execution failed:`, e);
-        process.exit(1);
+
+    } catch (e: any) {
+        console.error(`[ERROR] WiX failed with code ${e.exitCode}`);
+        process.exit(e.exitCode || 1);
     }
 }
 

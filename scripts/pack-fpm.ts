@@ -1,4 +1,4 @@
-import { spawn, file } from "bun";
+import { $, file } from "bun";
 import { copyFile, unlink } from "node:fs/promises";
 
 // 1. Configuration
@@ -54,31 +54,17 @@ async function main() {
         console.log(`[NFPM] Generating ${fmt} (${outputArch})...`);
 
         try {
-            const proc = spawn([
-                "nfpm", "pkg",
-                "--packager", fmt,
-                "--target", pkgFile
-            ], {
-                stdio: ["inherit", "inherit", "inherit"],
-                env: {
-                    ...process.env,
-                    VERSION: version,
-                    // Pass the translated arch to NFPM so internal metadata is correct
-                    ARCH: outputArch
-                }
+            await $`nfpm pkg --packager ${fmt} --target ${pkgFile}`.env({
+                ...process.env,
+                VERSION: version,
+                ARCH: outputArch
             });
 
-            const exitCode = await proc.exited;
-
-            if (exitCode === 0) {
-                console.log(`[DONE]    Created: ${pkgFile}`);
-            } else {
-                console.error(`[ERROR] NFPM failed for ${fmt} (Exit code: ${exitCode})`);
-                process.exit(exitCode);
-            }
+            console.log(`[DONE]    Created: ${pkgFile}`);
 
         } catch (error) {
-            console.error(`[ERROR] Execution failed:`, error);
+            console.error(`[ERROR] NFPM failed for ${fmt}`);
+            console.error(error);
             process.exit(1);
         }
     }

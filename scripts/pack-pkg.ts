@@ -1,4 +1,4 @@
-import { spawn, file } from "bun";
+import { $, file } from "bun";
 import { mkdir, rm, copyFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 
@@ -31,13 +31,9 @@ async function main() {
         if (await file(tarPath).exists()) {
             console.log(`[EXTRACT]  Found ${tarPath}, extracting binary...`);
 
-            const tarProc = spawn(["tar", "-xzf", basename(tarPath)], {
-                cwd: OUTPUT_DIR, // Extract inside dist/
-                stdio: ["ignore", "inherit", "inherit"]
-            });
-
-            const exit = await tarProc.exited;
-            if (exit !== 0) {
+            try {
+                await $`tar -xzf ${basename(tarPath)}`.cwd(OUTPUT_DIR);
+            } catch (e) {
                 console.error(`[ERROR] Failed to extract tarball`);
                 process.exit(1);
             }
@@ -69,28 +65,12 @@ async function main() {
     try {
         console.log(`[PKG]      Building ${pkgFile}...`);
 
-        const proc = spawn([
-            "pkgbuild",
-            "--root", stageDir,
-            "--identifier", PKG_IDENTIFIER,
-            "--version", version,
-            "--install-location", "/",
-            pkgFile
-        ], {
-            stdio: ["inherit", "inherit", "inherit"]
-        });
+        await $`pkgbuild --root ${stageDir} --identifier ${PKG_IDENTIFIER} --version ${version} --install-location / ${pkgFile}`;
 
-        const exitCode = await proc.exited;
-
-        if (exitCode === 0) {
-            console.log(`[SUCCESS]  Package created: ${pkgFile}`);
-        } else {
-            console.error(`[ERROR] pkgbuild failed with code ${exitCode}`);
-            process.exit(exitCode);
-        }
-    } catch (e) {
-        console.error(`[ERROR] Execution failed:`, e);
-        process.exit(1);
+        console.log(`[SUCCESS]  Package created: ${pkgFile}`);
+    } catch (e: any) {
+        console.error(`[ERROR] pkgbuild failed with code ${e.exitCode}`);
+        process.exit(e.exitCode || 1);
     } finally {
         // 8. Cleanup
         await rm(stageDir, { recursive: true, force: true });

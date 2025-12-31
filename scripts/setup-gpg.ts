@@ -54,7 +54,7 @@ if (GPG_PASSPHRASE) {
         ];
 
         for (const p of possiblePaths) {
-            const exists = await $`test -f ${p}`.exitCode === 0;
+            const exists = (await $`test -f ${p}`.nothrow()).exitCode === 0;
             if (exists) {
                 presetCmdPath = p;
                 break;

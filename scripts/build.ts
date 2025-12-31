@@ -1,10 +1,9 @@
-import { spawn } from "bun";
-import { basename, dirname, join } from "node:path";
+import { $ } from "bun";
+import { basename, dirname } from "node:path";
 import { unlink, readFile } from "node:fs/promises";
 
 // 1. Get Git Commit Hash
-const gitProc = spawn(["git", "rev-parse", "HEAD"], { stdout: "pipe" });
-const commit = (await new Response(gitProc.stdout).text()).trim();
+const commit = (await $`git rev-parse HEAD`.text()).trim();
 
 // 2. Get Current Date
 const date = new Date().toISOString();
@@ -54,28 +53,11 @@ if (envOutfile) {
 console.log(`        Output: ${outfile}`);
 
 // 5. Run Bun Compile
-const args = [
-    "build",
-    "--compile",
-    "--minify",
-    "--sourcemap=none",
-    "src/index.ts",
-    "--outfile", outfile,
-    "--define", `process.env.GIT_COMMIT="${commit}"`,
-    "--define", `process.env.BUILD_DATE="${date}"`
-];
-
-if (target) args.push("--target", target);
-
-const buildProc = spawn(["bun", ...args], {
-    stdio: ["inherit", "inherit", "inherit"]
-});
-
-const exitCode = await buildProc.exited;
-
-if (exitCode !== 0) {
-    console.error(`[ERROR] Build failed with exit code ${exitCode}`);
-    process.exit(exitCode);
+try {
+    await $`bun build --compile --minify --sourcemap=none src/index.ts --outfile ${outfile} --define process.env.GIT_COMMIT="${commit}" --define process.env.BUILD_DATE="${date}" ${target ? ["--target", target] : []}`;
+} catch (e: any) {
+    console.error(`[ERROR] Build failed with exit code ${e.exitCode}`);
+    process.exit(e.exitCode || 1);
 }
 
 // 6. Post-Process: Compress for macOS (.tar.gz)
@@ -86,20 +68,11 @@ if (target?.includes("darwin") || filename.includes("darwin")) {
     const dir = dirname(outfile);
     const rawBinary = basename(outfile);
 
-    const tarProc = spawn([
-        "tar",
-        "-czf",
-        basename(tarFile),
-        rawBinary
-    ], {
-        cwd: dir,
-        stdio: ["ignore", "inherit", "inherit"]
-    });
-
-    const tarExit = await tarProc.exited;
-    if (tarExit !== 0) {
+    try {
+        await $`tar -czf ${basename(tarFile)} ${rawBinary}`.cwd(dir);
+    } catch (e: any) {
         console.error(`[ERROR] Tar compression failed`);
-        process.exit(tarExit);
+        process.exit(e.exitCode || 1);
     }
 
     try {
