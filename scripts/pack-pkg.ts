@@ -31,7 +31,7 @@ async function main() {
         if (await file(tarPath).exists()) {
             console.log(`[EXTRACT]  Found ${tarPath}, extracting binary...`);
 
-            const tarProc = spawn(["tar", "-xzf", tarPath], {
+            const tarProc = spawn(["tar", "-xzf", basename(tarPath)], {
                 cwd: OUTPUT_DIR, // Extract inside dist/
                 stdio: ["ignore", "inherit", "inherit"]
             });
