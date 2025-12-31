@@ -13,7 +13,7 @@
 
 2. **Add the GPG key:**
    ```bash
-   sudo mkdir -p /etc/apt/keyrings
+   sudo mkdir -p -m 0755 /etc/apt/keyrings
    curl -fsSL https://pkg.uppsync.com/uppsync-main.gpg | sudo tee /etc/apt/keyrings/uppsync-main.gpg > /dev/null
    ```
 
@@ -32,6 +32,11 @@
    ```bash
    sudo apt-get update
    sudo apt-get install uppsyncd
+   ```
+
+5. **Verify installation:**
+   ```bash
+   sudo systemctl status uppsyncd
    ```
 
 ### Linux (Red Hat / CentOS / Fedora / Amazon Linux)
@@ -53,6 +58,11 @@
    sudo yum install uppsyncd
    ```
 
+3. **Verify installation:**
+   ```bash
+   sudo systemctl status uppsyncd
+   ```
+
 ### Windows
 
 1. **Download the installer:**
@@ -61,4 +71,23 @@
 2. **Install via PowerShell:**
    ```powershell
    msiexec /i https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-windows-amd64.msi /qn
+   ```
+
+3. **Verify installation:**
+   ```powershell
+   Get-Service uppsyncd
+   ```
+
+### macOS
+
+1. **Download the installer:**
+   - [Apple Silicon](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-arm64.pkg)
+   - [Intel](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-amd64.pkg)
+
+2. **Install:**
+   Double-click the downloaded `.pkg` file and follow the prompts.
+
+3. **Verify installation:**
+   ```bash
+   sudo launchctl list | grep uppsyncd
    ```
