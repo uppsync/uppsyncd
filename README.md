@@ -69,22 +69,9 @@ Alternatively, download the latest release directly:
 
 | Type | amd64 / x86-64 | ARM64 / aarch64 |
 | :--- | :--- | :--- |
-| **Binary** | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-amd64) | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-arm64) |
-| **.deb** | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-amd64.deb) | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-arm64.deb) |
-| **.rpm** | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-x86_64.rpm) | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-aarch64.rpm) |
-
-### Windows
-
-1. **Download the installer:**
-   [Download MSI](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-windows-amd64.msi)
-
-2. **Install:**
-   Double-click the downloaded `.msi` file and follow the prompts.
-
-3. **Verify installation:**
-   ```cmd
-   sc query uppsyncd
-   ```
+| Binary | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-amd64) | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-arm64) |
+| .deb | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-amd64.deb) | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-arm64.deb) |
+| .rpm | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-x86_64.rpm) | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-aarch64.rpm) |
 
 ### macOS
 
@@ -99,3 +86,20 @@ Alternatively, download the latest release directly:
    ```bash
    sudo launchctl list | grep uppsyncd
    ```
+
+Alternatively, download the latest [Darwin arm64 release ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-darwin-arm64.tar.gz) or latest [Darwin amd64 release ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-darwin-amd64.tar.gz) directly.
+
+### Windows
+
+1. **Download the installer:**
+   [Download MSI](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-windows-amd64.msi)
+
+2. **Install:**
+   Double-click the downloaded `.msi` file and follow the prompts.
+
+3. **Verify installation:**
+   ```cmd
+   sc query uppsyncd
+   ```
+
+Alternatively, download the latest [Windows amd64 executable ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-windows-amd64.exe) directly.
