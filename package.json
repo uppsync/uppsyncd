@@ -8,6 +8,7 @@
     "build": "bun run scripts/build.ts",
     "pack:deb": "bun run scripts/pack-deb.ts",
     "pack:msi": "bun run scripts/pack-msi.ts",
+    "pack:pkg": "bun run scripts/pack-pkg.ts",
     "repo": "bun run scripts/repo.ts",
     "publish": "bun run scripts/publish.ts"
   },

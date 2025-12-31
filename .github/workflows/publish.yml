@@ -44,14 +44,14 @@ jobs:
             runner: "macos-latest"
             bun_target: "bun-darwin-x64"
             asset_name: "uppsyncd-darwin-amd64"
-            pack: ""
+            pack: "pkg"
 
           - os: "darwin"
             arch: "arm64" # Apple Silicon
             runner: "macos-latest"
             bun_target: "bun-darwin-arm64"
             asset_name: "uppsyncd-darwin-arm64"
-            pack: ""
+            pack: "pkg"
 
     steps:
       - uses: actions/checkout@v6
@@ -75,7 +75,6 @@ jobs:
         run: bun run build
 
       - name: Package
-        if: matrix.pack != ''
         env:
           ARCH: ${{ matrix.arch }}
           VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '0.0.0-nightly' }}
