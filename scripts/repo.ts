@@ -66,7 +66,7 @@ async function main() {
     await mkdir(CONF_DIR, { recursive: true });
 
     // 4. Write Distributions Config
-    await write(join(CONF_DIR, "distributions"), DISTRIBUTION_CONFIG.trim());
+    await write(join(CONF_DIR, "distributions"), DISTRIBUTION_CONFIG.trim() + "\n");
     console.log(`[CONFIG]  Written to ${join(CONF_DIR, "distributions")}`);
 
     // 5. Run Reprepro
