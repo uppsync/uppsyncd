@@ -64,6 +64,10 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
+      - name: Setup WiX
+        if: contains(matrix.pack, 'msi')
+        run: dotnet tool install --global wix
+
       - name: Build
         env:
           TARGET: ${{ matrix.bun_target }}
