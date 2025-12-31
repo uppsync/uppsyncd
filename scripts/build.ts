@@ -54,7 +54,7 @@ console.log(`        Output: ${outfile}`);
 
 // 5. Run Bun Compile
 try {
-    await $`bun build --compile --minify --sourcemap=none src/index.ts --outfile ${outfile} --define process.env.GIT_COMMIT="${commit}" --define process.env.BUILD_DATE="${date}" ${target ? ["--target", target] : []}`;
+    await $`bun build --compile --minify --sourcemap=none src/index.ts --outfile ${outfile} --define process.env.GIT_COMMIT='${JSON.stringify(commit)}' --define process.env.BUILD_DATE='${JSON.stringify(date)}' ${target ? ["--target", target] : []}`;
 } catch (e: any) {
     console.error(`[ERROR] Build failed with exit code ${e.exitCode}`);
     process.exit(e.exitCode || 1);

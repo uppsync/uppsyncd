@@ -3,6 +3,9 @@ import * as commands from "./commands";
 
 const cli = cac("uppsyncd");
 
+cli.command("update", "Update uppsyncd to the latest version")
+    .action(commands.update);
+
 cli.command("version", "Print the version")
     .action(commands.version);
 
