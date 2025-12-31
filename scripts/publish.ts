@@ -79,6 +79,20 @@ async function main() {
                 ContentType: mimeType,
                 CacheControl: cacheControl
             }));
+
+            // 5. Special Case: Promote .repo files to root
+            // This allows https://pkg.uppsync.com/uppsyncd.repo
+            if (filePath.endsWith(".repo")) {
+                const rootKey = relativePath.split("\\").join("/");
+                console.log(`[UPLOAD] ${rootKey} (ROOT COPY)`);
+                await s3.send(new PutObjectCommand({
+                    Bucket: BUCKET,
+                    Key: rootKey,
+                    Body: fileContent,
+                    ContentType: mimeType,
+                    CacheControl: "public, max-age=60, must-revalidate"
+                }));
+            }
         }
 
         console.log(`[SUCCESS] Repo upload complete.`);

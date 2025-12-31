@@ -1,0 +1,71 @@
+import { mkdir, readdir, rename } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { $, write } from "bun";
+
+const DIST_DIR = "dist";
+const CHANNEL = process.env.CHANNEL || "unstable";
+const REPO_ROOT = "repo";
+const RPM_ROOT = join(REPO_ROOT, "rpm");
+const TARGET_DIR = join(RPM_ROOT, CHANNEL);
+
+console.log(`[RPM] Building repository for channel: '${CHANNEL}'`);
+
+// 1. Validate Source
+if (!existsSync(DIST_DIR)) {
+    console.error(`[RPM] Error: '${DIST_DIR}' directory not found.`);
+    process.exit(1);
+}
+
+// 2. Create Target Directory (e.g., repo/rpm/stable)
+await mkdir(TARGET_DIR, { recursive: true });
+
+// 3. Move RPM files
+const files = await readdir(DIST_DIR);
+const rpmFiles = files.filter(f => f.endsWith(".rpm"));
+
+if (rpmFiles.length === 0) {
+    console.error(`[RPM] Error: No .rpm files found in '${DIST_DIR}'.`);
+    process.exit(1);
+}
+
+for (const file of rpmFiles) {
+    const src = join(DIST_DIR, file);
+    const dest = join(TARGET_DIR, file);
+    console.log(`[RPM] Moving ${file} -> ${dest}`);
+    await rename(src, dest);
+}
+
+// 4. Generate Metadata
+console.log(`[RPM] Running createrepo_c on '${TARGET_DIR}'...`);
+try {
+    await $`createrepo_c ${TARGET_DIR}`;
+    console.log("[RPM] Repository index created successfully.");
+} catch (err) {
+    console.error(`[RPM] Failed to run createrepo_c. Is it installed?`);
+    console.error(err);
+    process.exit(1);
+}
+
+// 5. Generate .repo file for easy installation
+// Result: https://pkg.uppsync.com/uppsyncd/uppsyncd.repo
+const repoFileName = "uppsyncd.repo";
+const repoFilePath = join(REPO_ROOT, repoFileName);
+
+const repoContent = `[uppsyncd]
+name=Uppsync Monitoring Agent
+baseurl=https://pkg.uppsync.com/uppsyncd/rpm/stable
+enabled=1
+gpgcheck=0
+repo_gpgcheck=0
+
+[uppsyncd-unstable]
+name=Uppsync Monitoring Agent (Unstable)
+baseurl=https://pkg.uppsync.com/uppsyncd/rpm/unstable
+enabled=0
+gpgcheck=0
+repo_gpgcheck=0
+`;
+
+console.log(`[RPM] Generating repo file at '${repoFilePath}'`);
+await write(repoFilePath, repoContent);

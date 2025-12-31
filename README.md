@@ -33,3 +33,22 @@
    sudo apt-get update
    sudo apt-get install uppsyncd
    ```
+
+### Linux (Red Hat / CentOS / Fedora / Amazon Linux)
+
+1. **Add the repository:**
+   ```bash
+   curl -fsSL https://pkg.uppsync.com/uppsyncd.repo | sudo tee /etc/yum.repos.d/uppsyncd.repo
+   ```
+
+2. **Install the agent:**
+   ```bash
+   # (Optional) Enable unstable builds
+   # sudo dnf config-manager --set-enabled uppsyncd-unstable
+   # OR for older systems:
+   # sudo yum-config-manager --enable uppsyncd-unstable
+
+   sudo dnf install uppsyncd
+   # OR for older systems
+   sudo yum install uppsyncd
+   ```
