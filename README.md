@@ -52,3 +52,13 @@
    # OR for older systems
    sudo yum install uppsyncd
    ```
+
+### Windows
+
+1. **Download the installer:**
+   [Download MSI](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-windows-amd64.msi)
+
+2. **Install via PowerShell:**
+   ```powershell
+   msiexec /i https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-windows-amd64.msi /qn
+   ```
