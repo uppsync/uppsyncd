@@ -131,36 +131,15 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Setup Tools
+      - name: Install Tools
+        run: sudo apt-get update && sudo apt-get install -y reprepro
+
+      - name: Setup GPG
+        id: setup_gpg
         env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: |
-          sudo apt-get update && sudo apt-get install -y reprepro
-
-          # Import GPG Key
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
-
-          # Configure GPG Agent for non-interactive signing
-          if [ -n "$GPG_PASSPHRASE" ]; then
-            echo "allow-preset-passphrase" >> ~/.gnupg/gpg-agent.conf
-            gpg-connect-agent reloadagent /bye
-
-            # Get the keygrip of the imported key
-            KEYGRIP=$(gpg --list-secret-keys --with-colons | grep "^grp" | cut -d: -f10 | head -n 1)
-
-            if [ -z "$KEYGRIP" ]; then
-              echo "::error::Unable to find GPG Keygrip."
-              exit 1
-            fi
-
-            # Find and run gpg-preset-passphrase
-            PRESET_CMD=$(find /usr/lib /usr/libexec -name gpg-preset-passphrase -print -quit 2>/dev/null)
-            if [ -n "$PRESET_CMD" ]; then
-              echo "$GPG_PASSPHRASE" | $PRESET_CMD --preset $KEYGRIP
-            else
-              echo "::warning::gpg-preset-passphrase not found. Signing may fail."
-            fi
-          fi
+        run: bun run setup:gpg
 
       - name: Build Repository Index
         env:
@@ -169,9 +148,7 @@ jobs:
 
       - name: Export GPG Public Key
         run: |
-          # Get the Key ID of the imported key (first secret key found)
-          KEY_ID=$(gpg --list-secret-keys --with-colons | grep "^sec" | cut -d: -f5 | head -n 1)
-          gpg --armor --export "$KEY_ID" > ${{ github.repository_owner }}-main.gpg
+          gpg --armor --export "${{ steps.setup_gpg.outputs.GPG_KEY_ID }}" > ${{ github.repository_owner }}-main.gpg
 
       - name: Publish to S3
         env:
@@ -205,12 +182,26 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Setup Tools
-        run: sudo apt-get update && sudo apt-get install -y createrepo-c
+      - name: Install Tools
+        run: sudo apt-get update && sudo apt-get install -y createrepo-c rpm
+
+      - name: Setup GPG
+        id: setup_gpg
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: bun run setup:gpg
+
+      - name: Import GPG to RPM
+        run: |
+          gpg --export -a > public.key
+          rpm --import public.key
 
       - name: Build Repository Index
         env:
           CHANNEL: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'unstable' }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          GPG_KEY_ID: ${{ steps.setup_gpg.outputs.GPG_KEY_ID }}
         run: bun run repo:rpm
 
       - name: Publish to S3

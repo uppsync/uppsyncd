@@ -5,6 +5,7 @@ import { $, write } from "bun";
 
 const DIST_DIR = "dist";
 const CHANNEL = process.env.CHANNEL || "unstable";
+const REPO_NAME = process.env.REPO_NAME || "uppsyncd";
 const REPO_ROOT = "repo";
 const RPM_ROOT = join(REPO_ROOT, "rpm");
 const TARGET_DIR = join(RPM_ROOT, CHANNEL);
@@ -29,6 +30,25 @@ if (rpmFiles.length === 0) {
     process.exit(1);
 }
 
+// --- GPG SIGNING ---
+const GPG_KEY_ID = process.env.GPG_KEY_ID;
+if (GPG_KEY_ID) {
+    console.log(`[RPM] Signing packages with Key ID: ${GPG_KEY_ID}`);
+    const rpmMacro = `%_signature gpg
+%_gpg_path /root/.gnupg
+%_gpg_name ${GPG_KEY_ID}
+%_gpgbin /usr/bin/gpg
+`;
+    await write(`${process.env.HOME}/.rpmmacros`, rpmMacro);
+
+    for (const file of rpmFiles) {
+        const filePath = join(DIST_DIR, file);
+        console.log(`[RPM] Signing ${file}...`);
+        await $`rpm --addsign ${filePath}`;
+    }
+}
+// -------------------
+
 for (const file of rpmFiles) {
     const src = join(DIST_DIR, file);
     const dest = join(TARGET_DIR, file);
@@ -49,22 +69,24 @@ try {
 
 // 5. Generate .repo file for easy installation
 // Result: https://pkg.uppsync.com/uppsyncd/uppsyncd.repo
-const repoFileName = "uppsyncd.repo";
+const repoFileName = `${REPO_NAME}.repo`;
 const repoFilePath = join(REPO_ROOT, repoFileName);
 
-const repoContent = `[uppsyncd]
+const repoContent = `[${REPO_NAME}]
 name=Uppsync Monitoring Agent
-baseurl=https://pkg.uppsync.com/uppsyncd/rpm/stable
+baseurl=https://pkg.uppsync.com/${REPO_NAME}/rpm/stable
 enabled=1
-gpgcheck=0
+gpgcheck=1
 repo_gpgcheck=0
+gpgkey=https://pkg.uppsync.com/${REPO_NAME}-main.gpg
 
-[uppsyncd-unstable]
+[${REPO_NAME}-unstable]
 name=Uppsync Monitoring Agent (Unstable)
-baseurl=https://pkg.uppsync.com/uppsyncd/rpm/unstable
+baseurl=https://pkg.uppsync.com/${REPO_NAME}/rpm/unstable
 enabled=0
-gpgcheck=0
+gpgcheck=1
 repo_gpgcheck=0
+gpgkey=https://pkg.uppsync.com/${REPO_NAME}-main.gpg
 `;
 
 console.log(`[RPM] Generating repo file at '${repoFilePath}'`);

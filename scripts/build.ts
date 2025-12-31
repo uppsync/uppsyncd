@@ -1,6 +1,6 @@
 import { spawn } from "bun";
-import { basename, dirname } from "node:path";
-import { unlink } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
+import { unlink, readFile } from "node:fs/promises";
 
 // 1. Get Git Commit Hash
 const gitProc = spawn(["git", "rev-parse", "HEAD"], { stdout: "pipe" });
@@ -30,10 +30,25 @@ if (envOutfile) {
     }
     filename = basename(outfile);
 } else {
-    // Local dev fallback
-    const isWindows = target ? target.includes("windows") : process.platform === "win32";
-    filename = isWindows ? "uppsyncd.exe" : "uppsyncd";
-    outfile = `dist/${filename}`;
+    // Local dev fallback: Read from package.json
+    try {
+        const pkg = JSON.parse(await readFile("package.json", "utf-8"));
+        const binPath = Object.values(pkg.bin)[0] as string;
+
+        if (!binPath) throw new Error("No bin entry found");
+
+        const isWindows = target ? target.includes("windows") : process.platform === "win32";
+        outfile = binPath;
+
+        if (isWindows && !outfile.endsWith(".exe")) {
+            outfile += ".exe";
+        }
+        filename = basename(outfile);
+    } catch (e) {
+        console.error(`[ERROR] Failed to determine output path from package.json`);
+        console.error(e);
+        process.exit(1);
+    }
 }
 
 console.log(`        Output: ${outfile}`);
