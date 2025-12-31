@@ -8,36 +8,50 @@ const FORMATS = ["deb", "rpm"];
 
 // 2. Read Environment Variables
 const rawVersion = process.env.VERSION || "0.0.0-dev";
-const arch = process.env.ARCH || "amd64";
+// This is the "Debian/Standard" arch passed from GitHub Matrix (amd64, arm64)
+const inputArch = process.env.ARCH || "amd64";
 const inputBinary = process.env.OUTFILE || NFPM_EXPECTED_PATH;
-const assetName = process.env.ASSET_NAME || `uppsyncd-linux-${arch}`;
+const assetName = process.env.ASSET_NAME || `uppsyncd-linux-${inputArch}`;
 
+// 3. Sanitize Version
 const version = rawVersion.replace(/^v/, "");
 
 console.log(`[PACK] Starting packaging process`);
 console.log(`       Input:   ${inputBinary}`);
 console.log(`       Version: ${version}`);
-console.log(`       Arch:    ${arch}`);
+console.log(`       Arch:    ${inputArch}`);
 
 async function main() {
-    // 3. Pre-flight Check
+    // 4. Pre-flight Check
     const binaryFile = file(inputBinary);
     if (!(await binaryFile.exists())) {
         console.error(`[ERROR] Input binary not found: ${inputBinary}`);
         process.exit(1);
     }
 
-    // 4. Standardize Binary Name
+    // 5. Standardize Binary Name
     if (inputBinary !== NFPM_EXPECTED_PATH) {
         await copyFile(inputBinary, NFPM_EXPECTED_PATH);
     }
 
-    // 5. Loop through formats (DEB and RPM)
+    // 6. Loop through formats
     for (const fmt of FORMATS) {
-        // Define Output Filename: uppsyncd-linux-amd64.rpm
-        const pkgFile = `${OUTPUT_DIR}/${assetName}.${fmt}`;
 
-        console.log(`[NFPM] Generaring ${fmt}...`);
+        // --- ARCHITECTURE TRANSLATION LOGIC ---
+        let outputArch = inputArch;
+
+        // RPM uses x86_64 and aarch64
+        if (fmt === "rpm") {
+            if (inputArch === "amd64") outputArch = "x86_64";
+            if (inputArch === "arm64") outputArch = "aarch64";
+        }
+
+        // Define Output Filename: uppsyncd-linux-amd64.deb OR uppsyncd-linux-x86_64.rpm
+        // We replace the arch in the asset name to match the package standard
+        const pkgName = assetName.replace(inputArch, outputArch);
+        const pkgFile = `${OUTPUT_DIR}/${pkgName}.${fmt}`;
+
+        console.log(`[NFPM] Generating ${fmt} (${outputArch})...`);
 
         try {
             const proc = spawn([
@@ -49,7 +63,8 @@ async function main() {
                 env: {
                     ...process.env,
                     VERSION: version,
-                    ARCH: arch
+                    // Pass the translated arch to NFPM so the internal metadata is correct
+                    ARCH: outputArch
                 }
             });
 
@@ -68,7 +83,7 @@ async function main() {
         }
     }
 
-    // 6. Cleanup
+    // 7. Cleanup
     if (inputBinary !== NFPM_EXPECTED_PATH) {
         try { await unlink(NFPM_EXPECTED_PATH); } catch (e) {}
     }
