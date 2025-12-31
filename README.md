@@ -63,6 +63,16 @@
    sudo systemctl status uppsyncd
    ```
 
+### Linux (Manual / Direct Download)
+
+Alternatively, download the latest release directly:
+
+| Type | amd64 / x86-64 | ARM64 / aarch64 |
+| :--- | :--- | :--- |
+| **Binary** | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-amd64) | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-arm64) |
+| **.deb** | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-amd64.deb) | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-arm64.deb) |
+| **.rpm** | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-x86_64.rpm) | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-aarch64.rpm) |
+
 ### Windows
 
 1. **Download the installer:**
