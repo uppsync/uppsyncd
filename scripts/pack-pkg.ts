@@ -61,8 +61,8 @@ async function main() {
     await copyFile(binaryToPackage, join(binDir, "uppsyncd"));
 
     // 6. Define Output Filename
-    // dist/uppsyncd-darwin-amd64.pkg
-    const pkgName = basename(inputPath) + ".pkg";
+    // dist/uppsyncd-darwin-amd64.pkg -> dist/uppsyncd-amd64.pkg
+    const pkgName = basename(inputPath).replace("-darwin", "") + ".pkg";
     const pkgFile = join(OUTPUT_DIR, pkgName);
 
     // 7. Run pkgbuild
