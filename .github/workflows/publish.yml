@@ -11,39 +11,44 @@ permissions:
 jobs:
   package:
     name: Package ${{ matrix.os }} ${{ matrix.arch }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
         include:
-          # --- LINUX ---
+          # --- LINUX (Ubuntu Runner) ---
           - os: "linux"
             arch: "amd64"
+            runner: "ubuntu-latest"
             bun_target: "bun-linux-x64"
             asset_name: "uppsyncd-linux-amd64"
             package_deb: true
 
           - os: "linux"
             arch: "arm64"
+            runner: "ubuntu-latest"
             bun_target: "bun-linux-arm64"
             asset_name: "uppsyncd-linux-arm64"
             package_deb: true
 
-          # --- WINDOWS ---
+          # --- WINDOWS (Windows Runner) ---
           - os: "windows"
             arch: "amd64"
+            runner: "windows-latest"
             bun_target: "bun-windows-x64"
             asset_name: "uppsyncd-windows-amd64"
             package_deb: false
 
-          # --- MACOS ---
+          # --- MACOS (Mac Runner) ---
           - os: "darwin"
-            arch: "amd64"
+            arch: "amd64" # Intel
+            runner: "macos-latest"
             bun_target: "bun-darwin-x64"
             asset_name: "uppsyncd-darwin-amd64"
             package_deb: false
 
           - os: "darwin"
-            arch: "arm64"
+            arch: "arm64" # Apple Silicon
+            runner: "macos-latest"
             bun_target: "bun-darwin-arm64"
             asset_name: "uppsyncd-darwin-arm64"
             package_deb: false
@@ -82,7 +87,7 @@ jobs:
           if-no-files-found: ignore
 
   release:
-    name: Create GitHub Release
+    name: GitHub Release
     needs: package
     runs-on: ubuntu-latest
 
