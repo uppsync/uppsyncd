@@ -1,58 +1,81 @@
 import { spawn, write } from "bun";
-import { mkdir, readdir } from "node:fs/promises";
+import { mkdir, readdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 
+// --- CONFIGURATION ---
 const REPO_DIR = "repo";
 const CONF_DIR = join(REPO_DIR, "conf");
-const PKG_DIR = "packages";
+const INPUT_DIR = "dist"; // Where GitHub Actions downloaded the artifacts
 
-// 1. Define Repository Configuration
-// This maps to the 'Release' file that apt-get downloads.
+// Default to 'stable', but allow override (e.g., 'unstable' for nightly)
+const CODENAME = process.env.CODENAME || "stable";
+
 const DISTRIBUTION_CONFIG = `
 Origin: uppsyncd
 Label: uppsyncd
-Codename: stable
+Codename: ${CODENAME}
 Architectures: amd64 arm64
 Components: main
-Description: apt repository for uppsyncd
+Description: Uppsync Monitoring Agent
 SignWith: default
 `;
 
 async function main() {
-    console.log(`[REPO] Initializing APT Repository generation...`);
+    console.log(`[REPO]    Initializing APT Repository generation`);
+    console.log(`          Codename: ${CODENAME}`);
+    console.log(`          Input:    ${INPUT_DIR}`);
 
-    // 2. Pre-flight Check: Are there packages?
+    // 1. Pre-flight Check: Ensure we have packages
     try {
-        const files = await readdir(PKG_DIR);
+        const files = await readdir(INPUT_DIR);
         const debs = files.filter(f => f.endsWith(".deb"));
 
         if (debs.length === 0) {
-            console.error(`[ERROR] No .deb files found in '${PKG_DIR}'. Did build step fail?`);
+            console.error(`[ERROR] No .deb files found in '${INPUT_DIR}'.`);
             process.exit(1);
         }
-        console.log(`[REPO] Found ${debs.length} packages to index.`);
+        console.log(`[REPO]    Found ${debs.length} packages to index.`);
     } catch (e) {
-        console.error(`[ERROR] Directory '${PKG_DIR}' does not exist.`);
+        console.error(`[ERROR] Directory '${INPUT_DIR}' does not exist.`);
         process.exit(1);
     }
 
-    // 3. Prepare Directory Structure
+    // 2. Standardize Filenames (Optional but recommended)
+    // Converts 'uppsyncd-linux-amd64.deb' -> 'uppsyncd_amd64.deb'
+    // This helps reprepro organize files cleanly.
+    const files = await readdir(INPUT_DIR);
+    for (const f of files) {
+        if (!f.endsWith(".deb")) continue;
+
+        let newName = f;
+
+        // Convert CI artifact naming to Debian convention (underscore separator)
+        if (f.includes("-linux-amd64")) {
+            newName = f.replace("-linux-amd64", "_amd64");
+        } else if (f.includes("-linux-arm64")) {
+            newName = f.replace("-linux-arm64", "_arm64");
+        }
+
+        if (newName !== f) {
+            console.log(`[RENAME]  ${f} -> ${newName}`);
+            await rename(join(INPUT_DIR, f), join(INPUT_DIR, newName));
+        }
+    }
+
+    // 3. Prepare Repository Structure
     await mkdir(CONF_DIR, { recursive: true });
 
-    // 4. Write Configuration
+    // 4. Write Distributions Config
     await write(join(CONF_DIR, "distributions"), DISTRIBUTION_CONFIG.trim());
-    console.log(`[REPO] Config written to ${CONF_DIR}/distributions`);
+    console.log(`[CONFIG]  Written to ${join(CONF_DIR, "distributions")}`);
 
-    // 5. Run Reprepro (The Heavy Lifter)
-    // -V: Verbose
-    // -b: Base directory
-    // includedeb: The command to ingest a .deb file
-    console.log(`[REPO] Running reprepro...`);
+    // 5. Run Reprepro
+    // We use 'sh -c' to allow wildcard expansion (*.deb)
+    console.log(`[EXEC]    Running reprepro includedeb...`);
 
-    const proc = spawn([
-        "sh", "-c",
-        `reprepro -V --basedir ${REPO_DIR} includedeb stable ${PKG_DIR}/*.deb`
-    ], {
+    const command = `reprepro -V --basedir ${REPO_DIR} includedeb ${CODENAME} ${INPUT_DIR}/*.deb`;
+
+    const proc = spawn(["sh", "-c", command], {
         stdio: ["inherit", "inherit", "inherit"]
     });
 
@@ -63,8 +86,7 @@ async function main() {
         process.exit(exitCode);
     }
 
-    console.log(`[SUCCESS] Repository generated in '${REPO_DIR}/'.`);
-    console.log(`          Ready to upload to R2.`);
+    console.log(`[SUCCESS] Repository generated in '${REPO_DIR}/'`);
 }
 
 main();
