@@ -171,7 +171,7 @@ jobs:
         run: |
           # Get the Key ID of the imported key (first secret key found)
           KEY_ID=$(gpg --list-secret-keys --with-colons | grep "^sec" | cut -d: -f5 | head -n 1)
-          gpg --armor --export "$KEY_ID" > uppsync-main.gpg
+          gpg --armor --export "$KEY_ID" > ${{ github.repository_owner }}-main.gpg
 
       - name: Publish to S3
         env:

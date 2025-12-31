@@ -28,6 +28,6 @@ jobs:
       - name: Upload Binary
         uses: actions/upload-artifact@v6
         with:
-          name: uppsyncd-${{ matrix.os }}
-          path: dist/uppsyncd* # Matches 'uppsyncd' (Linux/Mac) and 'uppsyncd.exe' (Windows)
+          name: ${{ github.event.repository.name }}-${{ matrix.os }}
+          path: dist/${{ github.event.repository.name }}*
           if-no-files-found: error
