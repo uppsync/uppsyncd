@@ -66,7 +66,7 @@ jobs:
       - name: Setup WiX
         if: contains(matrix.pack, 'msi')
         run: |
-          bun remove -d @goreleaser/nfpm
+          bun remove @goreleaser/nfpm
           dotnet tool install --global wix
 
       - name: Install Dependencies
