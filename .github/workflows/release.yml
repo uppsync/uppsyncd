@@ -128,9 +128,7 @@ jobs:
 
       - name: Verify Version
         shell: powershell
-        run: |
-          $env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")
-          uppsyncd version
+        run: uppsyncd version
 
   verify-pkg:
     name: Verify PKG Install ${{ matrix.arch }}
