@@ -110,6 +110,24 @@ jobs:
           draft: true
           files: dist/*
 
+  verify-msi:
+    name: Verify MSI Install
+    needs: github-release
+    runs-on: windows-latest
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: assets-windows-amd64
+          path: dist
+
+      - name: Install MSI
+        run: msiexec /i dist\uppsyncd-windows-amd64.msi /quiet /norestart
+
+      - name: Verify Version
+        run: uppsyncd version
+
   publish-apt:
     name: APT Repository
     needs: package
@@ -378,9 +396,17 @@ jobs:
           docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
 
   verify-docker:
-    name: Verify Docker Image
+    name: Verify Docker Image ${{ matrix.arch }}
     needs: docker-merge
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
 
     steps:
       - name: Login to GHCR
