@@ -159,6 +159,30 @@ jobs:
           S3_SUBPATH: ${{ github.event.repository.name }}
         run: bun run publish
 
+  verify-apt:
+    name: Verify APT Install
+    needs: publish-apt
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Add Repository Key
+        run: |
+          curl -fsSL https://pkg.uppsync.com/uppsync-main.gpg | sudo tee /etc/apt/keyrings/uppsync-main.gpg > /dev/null
+
+      - name: Add Repository
+        env:
+          CHANNEL: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'unstable' }}
+        run: |
+          echo "deb [signed-by=/etc/apt/keyrings/uppsync-main.gpg] https://pkg.uppsync.com/uppsyncd $CHANNEL main" | sudo tee /etc/apt/sources.list.d/uppsyncd.list
+
+      - name: Install Package
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y uppsyncd
+
+      - name: Verify Version
+        run: uppsyncd version
+
   publish-rpm:
     name: RPM Repository
     needs: package
@@ -196,6 +220,7 @@ jobs:
         env:
           CHANNEL: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'unstable' }}
           REPO_NAME: ${{ github.event.repository.name }}
+          REPO_OWNER: ${{ github.repository_owner }}
           GPG_KEY_ID: ${{ steps.setup_gpg.outputs.GPG_KEY_ID }}
         run: bun run repo:rpm
 
@@ -207,30 +232,6 @@ jobs:
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           S3_SUBPATH: ${{ github.event.repository.name }}
         run: bun run publish
-
-  verify-apt:
-    name: Verify APT Install
-    needs: publish-apt
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Add Repository Key
-        run: |
-          curl -fsSL https://pkg.uppsync.com/uppsync-main.gpg | sudo tee /etc/apt/keyrings/uppsync-main.gpg > /dev/null
-
-      - name: Add Repository
-        env:
-          CHANNEL: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'unstable' }}
-        run: |
-          echo "deb [signed-by=/etc/apt/keyrings/uppsync-main.gpg] https://pkg.uppsync.com/uppsyncd $CHANNEL main" | sudo tee /etc/apt/sources.list.d/uppsyncd.list
-
-      - name: Install Package
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y uppsyncd
-
-      - name: Verify Version
-        run: uppsyncd version
 
   verify-rpm:
     name: Verify RPM Install
@@ -375,3 +376,36 @@ jobs:
       - name: Inspect Image
         run: |
           docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
+
+  verify-docker:
+    name: Verify Docker Image
+    needs: docker-merge
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine Image
+        id: get_image
+        run: |
+          # Determine tag: 'latest' for releases, branch name (e.g. 'main') for others
+          if [[ "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]]; then
+            TAG="latest"
+          else
+            TAG="${{ github.ref_name }}"
+            TAG=${TAG//\//-}
+          fi
+
+          IMAGE="ghcr.io/${{ github.repository }}:$TAG"
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+
+      - name: Pull Image
+        run: docker pull ${{ steps.get_image.outputs.image }}
+
+      - name: Verify Version
+        run: docker run --rm ${{ steps.get_image.outputs.image }} version

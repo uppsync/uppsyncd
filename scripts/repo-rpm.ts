@@ -6,6 +6,7 @@ import { $, write } from "bun";
 const DIST_DIR = "dist";
 const CHANNEL = process.env.CHANNEL || "unstable";
 const REPO_NAME = process.env.REPO_NAME || "uppsyncd";
+const REPO_OWNER = process.env.REPO_OWNER || "uppsync";
 const REPO_ROOT = "repo";
 const RPM_ROOT = join(REPO_ROOT, "rpm");
 const TARGET_DIR = join(RPM_ROOT, CHANNEL);
@@ -100,7 +101,7 @@ baseurl=https://pkg.uppsync.com/${REPO_NAME}/rpm/stable
 enabled=1
 gpgcheck=${checkStatus}
 repo_gpgcheck=${checkStatus}
-gpgkey=https://pkg.uppsync.com/${REPO_NAME}-main.gpg
+gpgkey=https://pkg.uppsync.com/${REPO_OWNER}-main.gpg
 
 [${REPO_NAME}-unstable]
 name=Uppsync Monitoring Agent (Unstable)
@@ -108,7 +109,7 @@ baseurl=https://pkg.uppsync.com/${REPO_NAME}/rpm/unstable
 enabled=0
 gpgcheck=${checkStatus}
 repo_gpgcheck=${checkStatus}
-gpgkey=https://pkg.uppsync.com/${REPO_NAME}-main.gpg
+gpgkey=https://pkg.uppsync.com/${REPO_OWNER}-main.gpg
 `;
 
 console.log(`[RPM] Generating repo file at '${repoFilePath}'`);
