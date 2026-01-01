@@ -320,7 +320,8 @@ jobs:
           CHANNEL: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'unstable' }}
         run: |
           if [ "$CHANNEL" = "unstable" ]; then
-            dnf install -y --enablerepo=uppsyncd-unstable uppsyncd
+            # Disable stable repo to ensure we test the unstable one
+            dnf install -y --disablerepo=uppsyncd --enablerepo=uppsyncd-unstable uppsyncd
           else
             dnf install -y uppsyncd
           fi
@@ -459,7 +460,7 @@ jobs:
           docker buildx imagetools inspect ${{ env.DOCKERHUB_IMAGE }}:${{ steps.meta.outputs.version }}
 
   verify-docker:
-    name: Verify Docker Image (${{ matrix.registry }} - ${{ matrix.arch }})
+    name: Verify ${{ matrix.registry }} Image (${{ matrix.arch }})
     needs: docker-merge
     runs-on: ${{ matrix.runner }}
     strategy:
