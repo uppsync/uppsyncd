@@ -65,9 +65,7 @@ jobs:
 
       - name: Setup WiX
         if: contains(matrix.pack, 'msi')
-        run: |
-          bun remove @goreleaser/nfpm
-          dotnet tool install --global wix
+        run: dotnet tool install --global wix
 
       - name: Install Dependencies
         run: bun install
@@ -161,30 +159,6 @@ jobs:
           S3_SUBPATH: ${{ github.event.repository.name }}
         run: bun run publish
 
-  verify-apt:
-    name: Verify APT Install
-    needs: publish-apt
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Add Repository Key
-        run: |
-          curl -fsSL https://pkg.uppsync.com/uppsync-main.gpg | sudo tee /etc/apt/keyrings/uppsync-main.gpg > /dev/null
-
-      - name: Add Repository
-        env:
-          CHANNEL: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'unstable' }}
-        run: |
-          echo "deb [signed-by=/etc/apt/keyrings/uppsync-main.gpg] https://pkg.uppsync.com/uppsyncd $CHANNEL main" | sudo tee /etc/apt/sources.list.d/uppsyncd.list
-
-      - name: Install Package
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y uppsyncd
-
-      - name: Verify Version
-        run: uppsyncd version
-
   publish-rpm:
     name: RPM Repository
     needs: package
@@ -233,6 +207,57 @@ jobs:
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           S3_SUBPATH: ${{ github.event.repository.name }}
         run: bun run publish
+
+  verify-apt:
+    name: Verify APT Install
+    needs: publish-apt
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Add Repository Key
+        run: |
+          curl -fsSL https://pkg.uppsync.com/uppsync-main.gpg | sudo tee /etc/apt/keyrings/uppsync-main.gpg > /dev/null
+
+      - name: Add Repository
+        env:
+          CHANNEL: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'unstable' }}
+        run: |
+          echo "deb [signed-by=/etc/apt/keyrings/uppsync-main.gpg] https://pkg.uppsync.com/uppsyncd $CHANNEL main" | sudo tee /etc/apt/sources.list.d/uppsyncd.list
+
+      - name: Install Package
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y uppsyncd
+
+      - name: Verify Version
+        run: uppsyncd version
+
+  verify-rpm:
+    name: Verify RPM Install
+    needs: publish-rpm
+    runs-on: ubuntu-latest
+    container: fedora:latest
+
+    steps:
+      - name: Install Prerequisites
+        run: dnf install -y curl
+
+      - name: Add Repository
+        run: |
+          curl -fsSL https://pkg.uppsync.com/uppsyncd.repo | tee /etc/yum.repos.d/uppsyncd.repo
+
+      - name: Install Package
+        env:
+          CHANNEL: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'unstable' }}
+        run: |
+          if [ "$CHANNEL" = "unstable" ]; then
+            dnf install -y --enablerepo=uppsyncd-unstable uppsyncd
+          else
+            dnf install -y uppsyncd
+          fi
+
+      - name: Verify Version
+        run: uppsyncd version
 
   docker-build:
     name: Docker Build ${{ matrix.arch }}
