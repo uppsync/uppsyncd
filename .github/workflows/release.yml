@@ -63,12 +63,14 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install Dependencies
-        run: bun install
-
       - name: Setup WiX
         if: contains(matrix.pack, 'msi')
-        run: dotnet tool install --global wix
+        run: |
+          bun remove -d @goreleaser/nfpm
+          dotnet tool install --global wix
+
+      - name: Install Dependencies
+        run: bun install
 
       - name: Build
         env:
