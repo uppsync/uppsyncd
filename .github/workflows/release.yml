@@ -159,6 +159,30 @@ jobs:
           S3_SUBPATH: ${{ github.event.repository.name }}
         run: bun run publish
 
+  verify-apt:
+    name: Verify APT Install
+    needs: publish-apt
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Add Repository Key
+        run: |
+          curl -fsSL https://pkg.uppsync.com/uppsync-main.gpg | sudo tee /etc/apt/keyrings/uppsync-main.gpg > /dev/null
+
+      - name: Add Repository
+        env:
+          CHANNEL: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'unstable' }}
+        run: |
+          echo "deb [signed-by=/etc/apt/keyrings/uppsync-main.gpg] https://pkg.uppsync.com/uppsyncd $CHANNEL main" | sudo tee /etc/apt/sources.list.d/uppsyncd.list
+
+      - name: Install Package
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y uppsyncd
+
+      - name: Verify Version
+        run: uppsyncd version
+
   publish-rpm:
     name: RPM Repository
     needs: package
