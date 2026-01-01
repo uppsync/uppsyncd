@@ -43,7 +43,7 @@ jobs:
           # --- MACOS (Mac Runner) ---
           - os: "darwin"
             arch: "amd64" # Intel
-            runner: "macos-15"
+            runner: "macos-15-intel"
             bun_target: "bun-darwin-x64-baseline"
             asset_name: "${{ github.event.repository.name }}-darwin-amd64"
             pack: "pkg"
@@ -128,7 +128,9 @@ jobs:
 
       - name: Verify Version
         shell: powershell
-        run: uppsyncd version
+        run: |
+          $env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")
+          uppsyncd version
 
   verify-pkg:
     name: Verify PKG Install ${{ matrix.arch }}
@@ -139,7 +141,7 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            runner: macos-15
+            runner: macos-15-intel
           - arch: arm64
             runner: macos-latest
 
