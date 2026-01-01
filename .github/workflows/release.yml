@@ -6,13 +6,17 @@ on:
     tags: [ "v*" ]
   workflow_dispatch:
 
+env:
+  GHCR_IMAGE: ghcr.io/${{ github.repository }}
+  DOCKERHUB_IMAGE: docker.io/${{ github.repository }}
+
 permissions:
   contents: write # Required for creating Releases
   packages: write # Required for pushing to GHCR
 
 jobs:
   package:
-    name: Package ${{ matrix.os }} ${{ matrix.arch }}
+    name: Package ${{ matrix.os }} (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
@@ -133,7 +137,7 @@ jobs:
           uppsyncd version
 
   verify-pkg:
-    name: Verify PKG Install ${{ matrix.arch }}
+    name: Verify PKG Install (${{ matrix.arch }})
     needs: github-release
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -208,7 +212,7 @@ jobs:
         run: bun run publish
 
   verify-apt:
-    name: Verify APT Install ${{ matrix.arch }}
+    name: Verify APT Install (${{ matrix.arch }})
     needs: publish-apt
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -290,7 +294,7 @@ jobs:
         run: bun run publish
 
   verify-rpm:
-    name: Verify RPM Install ${{ matrix.arch }}
+    name: Verify RPM Install (${{ matrix.arch }})
     needs: publish-rpm
     runs-on: ${{ matrix.runner }}
     container: fedora:latest
@@ -325,7 +329,7 @@ jobs:
         run: uppsyncd version
 
   docker-build:
-    name: Docker Build ${{ matrix.arch }}
+    name: Docker Build (${{ matrix.arch }})
     needs: package
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -362,7 +366,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: |
+            ${{ env.GHCR_IMAGE }}
+            ${{ env.DOCKERHUB_IMAGE }}
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -370,6 +376,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -381,7 +393,9 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=ghcr.io/${{ github.repository }},push-by-digest=true,name-canonical=true,push=true
+          outputs: |
+            type=image,name=${{ env.GHCR_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+            type=image,name=${{ env.DOCKERHUB_IMAGE }},push-by-digest=true,name-canonical=true,push=true
 
       - name: Export Digest
         run: |
@@ -417,6 +431,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -424,7 +444,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: |
+            ${{ env.GHCR_IMAGE }}
+            ${{ env.DOCKERHUB_IMAGE }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
@@ -435,14 +457,17 @@ jobs:
         working-directory: ${{ runner.temp }}/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf 'ghcr.io/${{ github.repository }}@sha256:%s ' *)
+            $(printf '${{ env.GHCR_IMAGE }}@sha256:%s ' *)
 
       - name: Inspect Image
         run: |
-          docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
+          echo "Inspecting GHCR image..."
+          docker buildx imagetools inspect ${{ env.GHCR_IMAGE }}:${{ steps.meta.outputs.version }}
+          echo "Inspecting Docker Hub image..."
+          docker buildx imagetools inspect ${{ env.DOCKERHUB_IMAGE }}:${{ steps.meta.outputs.version }}
 
   verify-docker:
-    name: Verify Docker Image ${{ matrix.arch }}
+    name: Verify Docker Image (${{ matrix.registry }} - ${{ matrix.arch }})
     needs: docker-merge
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -451,16 +476,32 @@ jobs:
         include:
           - arch: amd64
             runner: ubuntu-latest
+            registry: ghcr.io
           - arch: arm64
             runner: ubuntu-24.04-arm
+            registry: ghcr.io
+          - arch: amd64
+            runner: ubuntu-latest
+            registry: docker.io
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            registry: docker.io
 
     steps:
       - name: Login to GHCR
+        if: matrix.registry == 'ghcr.io'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        if: matrix.registry == 'docker.io'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Determine Image
         id: get_image
@@ -473,7 +514,12 @@ jobs:
             TAG=${TAG//\//-}
           fi
 
-          IMAGE="ghcr.io/${{ github.repository }}:$TAG"
+          if [[ "${{ matrix.registry }}" == "ghcr.io" ]]; then
+            IMAGE="${{ env.GHCR_IMAGE }}:$TAG"
+          else
+            IMAGE="${{ env.DOCKERHUB_IMAGE }}:$TAG"
+          fi
+
           echo "image=$IMAGE" >> $GITHUB_OUTPUT
 
       - name: Pull Image

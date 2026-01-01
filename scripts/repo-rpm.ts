@@ -96,7 +96,7 @@ const repoFilePath = join(REPO_ROOT, repoFileName);
 const checkStatus = GPG_KEY_ID ? "1" : "0";
 
 const repoContent = `[${REPO_NAME}]
-name=Uppsync Monitoring Agent
+name=Uppsync agent
 baseurl=https://pkg.uppsync.com/${REPO_NAME}/rpm/stable
 enabled=1
 gpgcheck=${checkStatus}
@@ -104,7 +104,7 @@ repo_gpgcheck=${checkStatus}
 gpgkey=https://pkg.uppsync.com/${REPO_OWNER}-main.gpg
 
 [${REPO_NAME}-unstable]
-name=Uppsync Monitoring Agent (Unstable)
+name=Uppsync agent (Unstable)
 baseurl=https://pkg.uppsync.com/${REPO_NAME}/rpm/unstable
 enabled=0
 gpgcheck=${checkStatus}

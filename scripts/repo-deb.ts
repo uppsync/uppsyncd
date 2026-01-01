@@ -18,7 +18,7 @@ Label: ${REPO_OWNER}
 Codename: ${CODENAME}
 Architectures: amd64 arm64
 Components: main
-Description: Uppsync Monitoring Agent
+Description: Uppsync agent
 SignWith: ${GPG_KEY_ID || "default"}
 `;
 
