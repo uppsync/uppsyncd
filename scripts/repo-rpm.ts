@@ -41,7 +41,7 @@ if (GPG_KEY_ID) {
     await $`rm public.key`;
 
     const rpmMacro = `%_signature gpg
-%_gpg_path /root/.gnupg
+%_gpg_path ${process.env.HOME}/.gnupg
 %_gpg_name ${GPG_KEY_ID}
 %_gpgbin /usr/bin/gpg
 `;
