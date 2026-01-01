@@ -13,7 +13,7 @@
         <StandardDirectory Id="ProgramFiles64Folder">
             <Directory Id="INSTALLFOLDER" Name="Uppsync">
                 <Component Id="MainExecutable" Guid="*">
-                    <File Id="UppsyncdEXE" Source="$(var.BinaryPath)" KeyPath="yes" />
+                    <File Id="UppsyncdEXE" Source="$(var.BinaryPath)" Name="uppsyncd.exe" KeyPath="yes" />
 
                     <!-- Add to PATH so they can type 'uppsyncd' in PowerShell -->
                     <Environment Id="PATH" Name="PATH" Value="[INSTALLFOLDER]" Permanent="no"
