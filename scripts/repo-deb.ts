@@ -84,7 +84,7 @@ async function main() {
         if (GPG_KEY_ID) {
             const keyFile = `${REPO_OWNER}-main.gpg`;
             console.log(`[GPG]     Exporting public key to ${keyFile}...`);
-            await $`gpg --armor --export ${GPG_KEY_ID} > ${keyFile}`;
+            await $`gpg --export ${GPG_KEY_ID} > ${keyFile}`;
         }
 
     } catch (e: any) {
