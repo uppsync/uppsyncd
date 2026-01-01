@@ -1,6 +1,6 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
     <Package
-        Name="Uppsync Monitoring Agent"
+        Name="Uppsync agent"
         Manufacturer="Uppsync"
         Version="$(var.Version)"
         UpgradeCode="55FF57AC-2025-4A11-9FFF-57AC00000001"

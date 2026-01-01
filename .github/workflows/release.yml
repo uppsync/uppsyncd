@@ -123,7 +123,27 @@ jobs:
           path: dist
 
       - name: Install MSI
+        shell: powershell
         run: msiexec /i dist\uppsyncd-windows-amd64.msi /quiet /norestart
+
+      - name: Verify Version
+        shell: powershell
+        run: uppsyncd version
+
+  verify-pkg:
+    name: Verify PKG Install
+    needs: github-release
+    runs-on: macos-latest
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: assets-darwin-amd64
+          path: dist
+
+      - name: Install PKG
+        run: sudo installer -pkg dist/uppsyncd-amd64.pkg -target /
 
       - name: Verify Version
         run: uppsyncd version
