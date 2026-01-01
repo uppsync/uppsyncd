@@ -3,12 +3,13 @@
 
 ## Installation
 
-### Linux (Debian/Ubuntu)
+<details>
+<summary>Linux (Debian/Ubuntu)</summary>
 
 1. **Install prerequisites:**
    ```bash
    sudo apt-get update
-   sudo apt-get install -y curl gpg
+   sudo apt-get install -y curl
    ```
 
 2. **Add the GPG key:**
@@ -19,12 +20,7 @@
 
 3. **Add the repository:**
    ```bash
-   # For stable releases
    echo "deb [signed-by=/etc/apt/keyrings/uppsync-main.gpg] https://pkg.uppsync.com/uppsyncd stable main" \
-   | sudo tee /etc/apt/sources.list.d/uppsyncd.list
-
-   # OR for nightly / dev
-   echo "deb [signed-by=/etc/apt/keyrings/uppsync-main.gpg] https://pkg.uppsync.com/uppsyncd unstable main" \
    | sudo tee /etc/apt/sources.list.d/uppsyncd.list
    ```
 
@@ -34,12 +30,10 @@
    sudo apt-get install uppsyncd
    ```
 
-5. **Verify installation:**
-   ```bash
-   sudo systemctl status uppsyncd
-   ```
+</details>
 
-### Linux (Red Hat / CentOS / Fedora / Amazon Linux)
+<details>
+<summary>Linux (Red Hat / CentOS / Fedora / Amazon Linux)</summary>
 
 1. **Add the repository:**
    ```bash
@@ -48,22 +42,13 @@
 
 2. **Install the agent:**
    ```bash
-   # (Optional) Enable unstable builds
-   # sudo dnf config-manager --set-enabled uppsyncd-unstable
-   # OR for older systems:
-   # sudo yum-config-manager --enable uppsyncd-unstable
-
    sudo dnf install uppsyncd
-   # OR for older systems
-   sudo yum install uppsyncd
    ```
 
-3. **Verify installation:**
-   ```bash
-   sudo systemctl status uppsyncd
-   ```
+</details>
 
-### Linux (Manual / Direct Download)
+<details>
+<summary>Linux (Manual / Direct Download)</summary>
 
 Alternatively, download the latest release directly:
 
@@ -73,7 +58,10 @@ Alternatively, download the latest release directly:
 | .deb | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-amd64.deb) | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-arm64.deb) |
 | .rpm | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-x86_64.rpm) | [Download ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-linux-aarch64.rpm) |
 
-### macOS
+</details>
+
+<details>
+<summary>macOS</summary>
 
 1. **Download the installer:**
    - [Apple Silicon](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-arm64.pkg)
@@ -82,14 +70,12 @@ Alternatively, download the latest release directly:
 2. **Install:**
    Double-click the downloaded `.pkg` file and follow the prompts.
 
-3. **Verify installation:**
-   ```bash
-   sudo launchctl list | grep uppsyncd
-   ```
-
 Alternatively, download the latest [Darwin arm64 release ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-darwin-arm64.tar.gz) or latest [Darwin amd64 release ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-darwin-amd64.tar.gz) directly.
 
-### Windows
+</details>
+
+<details>
+<summary>Windows</summary>
 
 1. **Download the installer:**
    [Download MSI](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-windows-amd64.msi)
@@ -97,9 +83,23 @@ Alternatively, download the latest [Darwin arm64 release ↗](https://github.com
 2. **Install:**
    Double-click the downloaded `.msi` file and follow the prompts.
 
-3. **Verify installation:**
-   ```cmd
-   sc query uppsyncd
-   ```
-
 Alternatively, download the latest [Windows amd64 executable ↗](https://github.com/uppsync/uppsyncd/releases/latest/download/uppsyncd-windows-amd64.exe) directly.
+
+</details>
+
+<details>
+<summary>Docker</summary>
+
+Run the latest version from Docker Hub:
+
+```bash
+docker run -d --name uppsyncd uppsync/uppsyncd:latest
+```
+
+Or from GitHub Container Registry:
+
+```bash
+docker run -d --name uppsyncd ghcr.io/uppsync/uppsyncd:latest
+```
+
+</details>
