@@ -46,6 +46,10 @@ jobs:
       - name: Build Binary
         run: bun run build
 
+      - name: Verify Version
+        working-directory: dist
+        run: uppsyncd version
+
       - name: Upload Binary
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v6
