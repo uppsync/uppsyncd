@@ -49,12 +49,7 @@ jobs:
       - name: Verify Version
         working-directory: dist
         shell: bash
-        run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            ./uppsyncd.exe version
-          else
-            ./uppsyncd version
-          fi
+        run: ./uppsyncd version
 
       - name: Upload Binary
         if: github.event_name == 'pull_request'
