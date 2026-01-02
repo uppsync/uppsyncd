@@ -1,5 +1,5 @@
-import { $, file } from "bun";
 import { copyFile, unlink } from "node:fs/promises";
+import { $, file } from "bun";
 
 // 1. Configuration
 const NFPM_EXPECTED_PATH = "dist/uppsyncd";
@@ -21,59 +21,59 @@ console.log(`       Version: ${version}`);
 console.log(`       Arch:    ${inputArch}`);
 
 async function main() {
-    // 4. Pre-flight Check
-    const binaryFile = file(inputBinary);
-    if (!(await binaryFile.exists())) {
-        console.error(`[ERROR] Input binary not found: ${inputBinary}`);
-        process.exit(1);
-    }
+	// 4. Pre-flight Check
+	const binaryFile = file(inputBinary);
+	if (!(await binaryFile.exists())) {
+		console.error(`[ERROR] Input binary not found: ${inputBinary}`);
+		process.exit(1);
+	}
 
-    // 5. Standardize Binary Name
-    // NFPM expects the binary at the specific path defined in nfpm.yaml
-    if (inputBinary !== NFPM_EXPECTED_PATH) {
-        await copyFile(inputBinary, NFPM_EXPECTED_PATH);
-    }
+	// 5. Standardize Binary Name
+	// NFPM expects the binary at the specific path defined in nfpm.yaml
+	if (inputBinary !== NFPM_EXPECTED_PATH) {
+		await copyFile(inputBinary, NFPM_EXPECTED_PATH);
+	}
 
-    // 6. Loop through formats
-    for (const fmt of FORMATS) {
+	// 6. Loop through formats
+	for (const fmt of FORMATS) {
+		// --- ARCHITECTURE TRANSLATION LOGIC ---
+		// Debian uses amd64/arm64. RPM uses x86_64/aarch64.
+		let outputArch = inputArch;
 
-        // --- ARCHITECTURE TRANSLATION LOGIC ---
-        // Debian uses amd64/arm64. RPM uses x86_64/aarch64.
-        let outputArch = inputArch;
+		if (fmt === "rpm") {
+			if (inputArch === "amd64") outputArch = "x86_64";
+			if (inputArch === "arm64") outputArch = "aarch64";
+		}
 
-        if (fmt === "rpm") {
-            if (inputArch === "amd64") outputArch = "x86_64";
-            if (inputArch === "arm64") outputArch = "aarch64";
-        }
+		// Define Output Filename: uppsyncd-linux-{arch}.{ext}
+		// Example: uppsyncd-linux-amd64.deb or uppsyncd-linux-x86_64.rpm
+		const pkgName = `uppsyncd-linux-${outputArch}`;
+		const pkgFile = `${OUTPUT_DIR}/${pkgName}.${fmt}`;
 
-        // Define Output Filename: uppsyncd-linux-{arch}.{ext}
-        // Example: uppsyncd-linux-amd64.deb or uppsyncd-linux-x86_64.rpm
-        const pkgName = `uppsyncd-linux-${outputArch}`;
-        const pkgFile = `${OUTPUT_DIR}/${pkgName}.${fmt}`;
+		console.log(`[NFPM] Generating ${fmt} (${outputArch})...`);
 
-        console.log(`[NFPM] Generating ${fmt} (${outputArch})...`);
+		try {
+			await $`nfpm pkg --packager ${fmt} --target ${pkgFile}`.env({
+				...process.env,
+				VERSION: version,
+				ARCH: outputArch,
+			});
 
-        try {
-            await $`nfpm pkg --packager ${fmt} --target ${pkgFile}`.env({
-                ...process.env,
-                VERSION: version,
-                ARCH: outputArch
-            });
+			console.log(`[DONE]    Created: ${pkgFile}`);
+		} catch (error) {
+			console.error(`[ERROR] NFPM failed for ${fmt}`);
+			console.error(error);
+			process.exit(1);
+		}
+	}
 
-            console.log(`[DONE]    Created: ${pkgFile}`);
-
-        } catch (error) {
-            console.error(`[ERROR] NFPM failed for ${fmt}`);
-            console.error(error);
-            process.exit(1);
-        }
-    }
-
-    // 7. Cleanup
-    // Remove the temporary generic file to keep dist/ clean
-    if (inputBinary !== NFPM_EXPECTED_PATH) {
-        try { await unlink(NFPM_EXPECTED_PATH); } catch (e) { }
-    }
+	// 7. Cleanup
+	// Remove the temporary generic file to keep dist/ clean
+	if (inputBinary !== NFPM_EXPECTED_PATH) {
+		try {
+			await unlink(NFPM_EXPECTED_PATH);
+		} catch (_e) {}
+	}
 }
 
 main();

@@ -1,33 +1,36 @@
 {
-  "name": "uppsyncd",
-  "version": "0.0.1",
-  "bin": {
-    "uppsyncd": "./dist/uppsyncd"
-  },
-  "scripts": {
-    "build": "bun run scripts/build.ts",
-    "pack:fpm": "bun run scripts/pack-fpm.ts",
-    "pack:msi": "bun run scripts/pack-msi.ts",
-    "pack:pkg": "bun run scripts/pack-pkg.ts",
-    "repo:deb": "bun run scripts/repo-deb.ts",
-    "repo:rpm": "bun run scripts/repo-rpm.ts",
-    "setup:gpg": "bun run scripts/setup-gpg.ts",
-    "publish": "bun run scripts/publish.ts"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "@goreleaser/nfpm": "^2.44.1",
-    "@aws-sdk/client-s3": "^3.958.0",
-    "mime-types": "^3.0.2",
-    "@types/mime-types": "^3.0.1"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@types/semver": "^7.7.1",
-    "cac": "^6.7.14",
-    "semver": "^7.7.3",
-    "systeminformation": "^5.28.3"
-  }
+	"name": "uppsyncd",
+	"version": "0.0.1",
+	"bin": {
+		"uppsyncd": "./dist/uppsyncd"
+	},
+	"scripts": {
+		"build": "bun run scripts/build.ts",
+		"pack:fpm": "bun run scripts/pack-fpm.ts",
+		"pack:msi": "bun run scripts/pack-msi.ts",
+		"pack:pkg": "bun run scripts/pack-pkg.ts",
+		"repo:deb": "bun run scripts/repo-deb.ts",
+		"repo:rpm": "bun run scripts/repo-rpm.ts",
+		"setup:gpg": "bun run scripts/setup-gpg.ts",
+		"publish": "bun run scripts/publish.ts",
+		"lint": "biome check .",
+		"format": "biome check --write ."
+	},
+	"devDependencies": {
+		"@aws-sdk/client-s3": "^3.958.0",
+		"@biomejs/biome": "^2.3.10",
+		"@goreleaser/nfpm": "^2.44.1",
+		"@types/bun": "latest",
+		"@types/mime-types": "^3.0.1",
+		"mime-types": "^3.0.2"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@types/semver": "^7.7.1",
+		"cac": "^6.7.14",
+		"semver": "^7.7.3",
+		"systeminformation": "^5.28.3"
+	}
 }

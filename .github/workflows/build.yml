@@ -1,6 +1,8 @@
-name: Build & Test Package
+name: Build & Lint
 
 on:
+  push:
+    branches: [ "main" ]
   pull_request:
 
 jobs:
@@ -22,12 +24,17 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
+      - name: Lint & Format
+        run: bun run lint
+
       - name: Build Binary
         run: bun run build
 
       - name: Upload Binary
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v6
         with:
           name: ${{ github.event.repository.name }}-${{ matrix.os }}
           path: dist/${{ github.event.repository.name }}*
+          retention-days: 1
           if-no-files-found: error

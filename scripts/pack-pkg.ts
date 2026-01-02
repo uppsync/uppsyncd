@@ -1,6 +1,6 @@
-import { $, file } from "bun";
-import { mkdir, rm, copyFile } from "node:fs/promises";
+import { copyFile, mkdir, rm } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { $, file } from "bun";
 
 // 1. Configuration
 const OUTPUT_DIR = "dist";
@@ -20,66 +20,70 @@ console.log(`           Input:    ${inputPath}`);
 console.log(`           Version:  ${version}`);
 
 async function main() {
-    // 4. Locate the Binary (Handle .tar.gz logic)
-    let binaryToPackage = inputPath;
-    let isTarball = false;
+	// 4. Locate the Binary (Handle .tar.gz logic)
+	const binaryToPackage = inputPath;
+	let isTarball = false;
 
-    // Check if raw binary exists
-    if (!(await file(inputPath).exists())) {
-        // Check if tarball exists (created by build.ts)
-        const tarPath = `${inputPath}.tar.gz`;
-        if (await file(tarPath).exists()) {
-            console.log(`[EXTRACT]  Found ${tarPath}, extracting binary...`);
+	// Check if raw binary exists
+	if (!(await file(inputPath).exists())) {
+		// Check if tarball exists (created by build.ts)
+		const tarPath = `${inputPath}.tar.gz`;
+		if (await file(tarPath).exists()) {
+			console.log(`[EXTRACT]  Found ${tarPath}, extracting binary...`);
 
-            try {
-                await $`tar -xzf ${basename(tarPath)}`.cwd(OUTPUT_DIR);
-            } catch (e) {
-                console.error(`[ERROR] Failed to extract tarball`);
-                process.exit(1);
-            }
-            isTarball = true;
-        } else {
-            console.error(`[ERROR] Input binary not found: ${inputPath}`);
-            process.exit(1);
-        }
-    }
+			try {
+				await $`tar -xzf ${basename(tarPath)}`.cwd(OUTPUT_DIR);
+			} catch (_e) {
+				console.error(`[ERROR] Failed to extract tarball`);
+				process.exit(1);
+			}
+			isTarball = true;
+		} else {
+			console.error(`[ERROR] Input binary not found: ${inputPath}`);
+			process.exit(1);
+		}
+	}
 
-    // 5. Prepare Staging Directory
-    // pkgbuild requires a folder structure that mirrors the installation
-    const stageDir = join(OUTPUT_DIR, "_pkg_staging");
-    const binDir = join(stageDir, INSTALL_LOCATION.replace(/^\//, ""));
+	// 5. Prepare Staging Directory
+	// pkgbuild requires a folder structure that mirrors the installation
+	const stageDir = join(OUTPUT_DIR, "_pkg_staging");
+	const binDir = join(stageDir, INSTALL_LOCATION.replace(/^\//, ""));
 
-    // Clean previous runs
-    await rm(stageDir, { recursive: true, force: true });
-    await mkdir(binDir, { recursive: true });
+	// Clean previous runs
+	await rm(stageDir, { recursive: true, force: true });
+	await mkdir(binDir, { recursive: true });
 
-    // Copy binary to staging (Rename to 'uppsyncd')
-    await copyFile(binaryToPackage, join(binDir, "uppsyncd"));
+	// Copy binary to staging (Rename to 'uppsyncd')
+	await copyFile(binaryToPackage, join(binDir, "uppsyncd"));
 
-    // 6. Define Output Filename
-    // dist/uppsyncd-darwin-amd64.pkg -> dist/uppsyncd-amd64.pkg
-    const pkgName = basename(inputPath).replace("-darwin", "") + ".pkg";
-    const pkgFile = join(OUTPUT_DIR, pkgName);
+	// 6. Define Output Filename
+	// dist/uppsyncd-darwin-amd64.pkg -> dist/uppsyncd-amd64.pkg
+	const pkgName = `${basename(inputPath).replace("-darwin", "")}.pkg`;
+	const pkgFile = join(OUTPUT_DIR, pkgName);
 
-    // 7. Run pkgbuild
-    try {
-        console.log(`[PKG]      Building ${pkgFile}...`);
+	// 7. Run pkgbuild
+	try {
+		console.log(`[PKG]      Building ${pkgFile}...`);
 
-        await $`pkgbuild --root ${stageDir} --identifier ${PKG_IDENTIFIER} --version ${version} --install-location / ${pkgFile}`;
+		await $`pkgbuild --root ${stageDir} --identifier ${PKG_IDENTIFIER} --version ${version} --install-location / ${pkgFile}`;
 
-        console.log(`[SUCCESS]  Package created: ${pkgFile}`);
-    } catch (e: any) {
-        console.error(`[ERROR] pkgbuild failed with code ${e.exitCode}`);
-        process.exit(e.exitCode || 1);
-    } finally {
-        // 8. Cleanup
-        await rm(stageDir, { recursive: true, force: true });
+		console.log(`[SUCCESS]  Package created: ${pkgFile}`);
+	} catch (e) {
+		if (e instanceof $.ShellError) {
+			console.error(`[ERROR] pkgbuild failed with code ${e.exitCode}`);
+			process.exit(e.exitCode || 1);
+		}
+		console.error("[ERROR] Unexpected error:", e);
+		process.exit(1);
+	} finally {
+		// 8. Cleanup
+		await rm(stageDir, { recursive: true, force: true });
 
-        // If we extracted it from tar, remove the raw binary again to keep dist clean
-        if (isTarball) {
-            await rm(inputPath, { force: true });
-        }
-    }
+		// If we extracted it from tar, remove the raw binary again to keep dist clean
+		if (isTarball) {
+			await rm(inputPath, { force: true });
+		}
+	}
 }
 
 main();
