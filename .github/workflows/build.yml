@@ -48,7 +48,14 @@ jobs:
 
       - name: Verify Version
         working-directory: dist
-        run: uppsyncd version
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            ./uppsyncd.exe version
+          else
+            chmod +x ./uppsyncd
+            ./uppsyncd version
+          fi
 
       - name: Upload Binary
         if: github.event_name == 'pull_request'
