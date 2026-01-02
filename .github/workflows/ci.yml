@@ -24,9 +24,27 @@ jobs:
       - name: Lint
         run: bun run lint
 
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Typecheck
+        run: bun run typecheck
+
   build:
     name: Build on ${{ matrix.os }}
-    needs: lint
+    needs: [lint, typecheck]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
