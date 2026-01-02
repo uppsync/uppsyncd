@@ -6,8 +6,27 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Lint & Format
+        run: bun run lint
+
   build:
     name: Build on ${{ matrix.os }}
+    needs: lint
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -23,9 +42,6 @@ jobs:
 
       - name: Install Dependencies
         run: bun install
-
-      - name: Lint & Format
-        run: bun run lint
 
       - name: Build Binary
         run: bun run build
