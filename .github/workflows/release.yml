@@ -116,7 +116,7 @@ jobs:
 
   verify-msi:
     name: Verify MSI Install
-    needs: github-release
+    needs: package
     runs-on: windows-latest
 
     steps:
@@ -138,7 +138,7 @@ jobs:
 
   verify-pkg:
     name: Verify PKG Install (${{ matrix.arch }})
-    needs: github-release
+    needs: package
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
