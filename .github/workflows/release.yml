@@ -140,7 +140,7 @@ jobs:
 
   verify-msi:
     name: Verify MSI Install
-    needs: package
+    needs: github-release
     runs-on: windows-latest
 
     steps:
@@ -162,7 +162,7 @@ jobs:
 
   verify-pkg:
     name: Verify PKG Install (${{ matrix.arch }})
-    needs: package
+    needs: github-release
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -205,7 +205,7 @@ jobs:
       - name: Download All Artifacts
         uses: actions/download-artifact@v7
         with:
-          pattern: assets-linux-*
+          pattern: assets-linux-a??64
           path: dist
           merge-multiple: true
 
@@ -286,7 +286,7 @@ jobs:
       - name: Download All Artifacts
         uses: actions/download-artifact@v7
         with:
-          pattern: assets-linux-*
+          pattern: assets-linux-a??64
           path: dist
           merge-multiple: true
 
