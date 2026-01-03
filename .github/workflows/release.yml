@@ -429,7 +429,7 @@ jobs:
         run: uppsyncd version
 
   publish-install-script:
-    name: Publish Install Script
+    name: Publish install.sh
     needs: [test-apt, test-rpm, test-apk]
     runs-on: ubuntu-latest
 
@@ -459,7 +459,7 @@ jobs:
         run: bun run publish
 
   test-install-script:
-    name: Test Install Script (${{ matrix.distro }}-${{ matrix.arch }})
+    name: Test install.sh (${{ matrix.distro }}-${{ matrix.arch }})
     needs: publish-install-script
     runs-on: ${{ matrix.runner }}
     container: ${{ matrix.image }}
