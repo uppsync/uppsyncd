@@ -120,7 +120,7 @@ jobs:
           if-no-files-found: ignore
 
   github-release:
-    name: GitHub Release
+    name: Publish GitHub Release
     needs: package
     runs-on: ubuntu-latest
 
@@ -187,7 +187,7 @@ jobs:
         run: uppsyncd version
 
   publish-apt:
-    name: APT Repository
+    name: Publish APT Repository
     needs: package
     runs-on: ubuntu-latest
 
@@ -268,7 +268,7 @@ jobs:
         run: uppsyncd version
 
   publish-rpm:
-    name: RPM Repository
+    name: Publish RPM Repository
     needs: package
     runs-on: ubuntu-latest
 
@@ -354,7 +354,7 @@ jobs:
         run: uppsyncd version
 
   publish-apk:
-    name: APK Repository
+    name: Publish APK Repository
     needs: package
     runs-on: ubuntu-latest
     container: oven/bun:alpine
@@ -459,19 +459,40 @@ jobs:
         run: bun run publish
 
   verify-install-script:
-    name: Verify Install Script (${{ matrix.distro }})
+    name: Verify Install Script (${{ matrix.distro }} - ${{ matrix.arch }})
     needs: publish-install-script
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
+          # --- AMD64 ---
           - distro: ubuntu
+            arch: amd64
+            runner: ubuntu-latest
             image: ubuntu:latest
           - distro: fedora
+            arch: amd64
+            runner: ubuntu-latest
             image: fedora:latest
           - distro: alpine
+            arch: amd64
+            runner: ubuntu-latest
             image: alpine:latest
+
+          # --- ARM64 ---
+          - distro: ubuntu
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            image: ubuntu:latest
+          - distro: fedora
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            image: fedora:latest
+          - distro: alpine
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            image: arm64v8/alpine:latest
 
     container: ${{ matrix.image }}
 
@@ -571,7 +592,7 @@ jobs:
           retention-days: 1
 
   docker-merge:
-    name: Docker Merge
+    name: Publish Docker
     runs-on: ubuntu-latest
     needs: docker-build
 
