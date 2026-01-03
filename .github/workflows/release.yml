@@ -394,6 +394,7 @@ jobs:
     name: Verify APK Install (${{ matrix.arch }})
     needs: publish-apk
     runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.image }}
     strategy:
       fail-fast: false
       matrix:
@@ -404,8 +405,6 @@ jobs:
           - arch: arm64
             runner: ubuntu-24.04-arm
             image: arm64v8/alpine:latest
-
-    container: ${{ matrix.image }}
 
     steps:
       - name: Install Prerequisites
