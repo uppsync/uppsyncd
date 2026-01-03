@@ -25,13 +25,14 @@ jobs:
     strategy:
       matrix:
         include:
-          # --- LINUX (Ubuntu Runner) ---
+          # --- LINUX (Standard - glibc) ---
           - os: "linux"
             arch: "amd64"
             runner: "ubuntu-latest"
             bun_target: "bun-linux-x64"
             asset_name: "${{ github.event.repository.name }}-linux-amd64"
             pack: "fpm"
+            pack_formats: "deb rpm"
 
           - os: "linux"
             arch: "arm64"
@@ -39,6 +40,24 @@ jobs:
             bun_target: "bun-linux-arm64"
             asset_name: "${{ github.event.repository.name }}-linux-arm64"
             pack: "fpm"
+            pack_formats: "deb rpm"
+
+          # --- LINUX (Alpine - musl) ---
+          - os: "linux"
+            arch: "amd64"
+            runner: "ubuntu-latest"
+            bun_target: "bun-linux-x64-musl"
+            asset_name: "${{ github.event.repository.name }}-linux-amd64-musl"
+            pack: "fpm"
+            pack_formats: "apk"
+
+          - os: "linux"
+            arch: "arm64"
+            runner: "ubuntu-latest"
+            bun_target: "bun-linux-arm64-musl"
+            asset_name: "${{ github.event.repository.name }}-linux-arm64-musl"
+            pack: "fpm"
+            pack_formats: "apk"
 
           # --- WINDOWS (Windows Runner) ---
           - os: "windows"
@@ -89,6 +108,7 @@ jobs:
           ARCH: ${{ matrix.arch }}
           VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '0.0.0-nightly' }}
           OUTFILE: dist/${{ matrix.asset_name }}
+          PACK_FORMATS: ${{ matrix.pack_formats }}
         run: bun run pack:${{ matrix.pack }}
 
       - name: Upload Artifact
@@ -389,7 +409,7 @@ jobs:
 
     steps:
       - name: Install Prerequisites
-        run: apk add --no-cache curl gcompat
+        run: apk add --no-cache curl
 
       - name: Add Repository Key
         run: |

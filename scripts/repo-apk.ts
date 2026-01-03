@@ -147,7 +147,9 @@ async function main() {
 			// We use --allow-untrusted because 'apk index' can be finicky about verifying
 			// signatures of input packages in a CI environment, even if they are valid.
 			// Since we explicitly signed them above, we know they are good.
-			await $`apk index --allow-untrusted -v -o APKINDEX.tar.gz ${apkFiles}`.cwd(dir);
+			await $`apk index --allow-untrusted -v -o APKINDEX.tar.gz ${apkFiles}`.cwd(
+				dir,
+			);
 
 			// Sign the index
 			if (signingKeyPath) {
