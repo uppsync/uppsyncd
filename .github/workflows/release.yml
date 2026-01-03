@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   package:
-    name: Package ${{ matrix.asset_name }}
+    name: Package (${{ matrix.asset_name }})
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
@@ -452,7 +452,7 @@ jobs:
         run: bun run publish
 
   test-install-script:
-    name: Test install.sh on ${{ matrix.distro }} (${{ matrix.arch }})
+    name: Test install.sh (${{ matrix.distro }}-${{ matrix.arch }})
     needs: publish-install-script
     runs-on: ${{ matrix.runner }}
     container: ${{ matrix.image }}
