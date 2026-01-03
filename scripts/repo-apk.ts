@@ -47,6 +47,27 @@ async function setupKeys() {
 	}
 }
 
+async function getApkMetadata(
+	filePath: string,
+): Promise<{ name: string; version: string }> {
+	// Extract .PKGINFO from the APK to determine the correct package name and version
+	// Alpine expects: name-version.apk
+	const proc = Bun.spawn(["tar", "-xf", filePath, "-O", ".PKGINFO"], {
+		stderr: "ignore",
+	});
+	const text = await new Response(proc.stdout).text();
+
+	let name = "";
+	let version = "";
+
+	for (const line of text.split("\n")) {
+		if (line.startsWith("pkgname = ")) name = line.substring(10).trim();
+		if (line.startsWith("pkgver = ")) version = line.substring(9).trim();
+	}
+
+	return { name, version };
+}
+
 async function main() {
 	console.log(`[REPO]    Initializing APK Repository generation`);
 	console.log(`          Channel:  ${CHANNEL}`);
@@ -85,14 +106,23 @@ async function main() {
 		await mkdir(targetDir, { recursive: true });
 
 		const srcPath = join(INPUT_DIR, f);
-		const dstPath = join(targetDir, f);
 
-		console.log(`[COPY]    ${f} -> ${targetDir}/`);
+		// Determine correct filename for Alpine (name-version.apk)
+		// This fixes the 404 error where apk expects the filename to match the package metadata
+		const { name, version } = await getApkMetadata(srcPath);
+		let destFilename = f;
+		if (name && version) {
+			destFilename = `${name}-${version}.apk`;
+		}
+
+		const dstPath = join(targetDir, destFilename);
+
+		console.log(`[COPY]    ${f} -> ${targetDir}/${destFilename}`);
 		await copyFile(srcPath, dstPath);
 
 		// Sign the package individually (Professional Standard)
 		if (signingKeyPath) {
-			console.log(`[SIGN]    Signing ${f}...`);
+			console.log(`[SIGN]    Signing ${destFilename}...`);
 			await $`abuild-sign -k ${signingKeyPath} ${dstPath}`;
 		}
 	}
