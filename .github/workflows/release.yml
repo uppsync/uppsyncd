@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   package:
-    name: Package ${{ matrix.os }} (${{ matrix.arch }})
+    name: Package ${{ matrix.os }} (${{ matrix.arch }}${{ contains(matrix.bun_target, 'musl') && ', musl' || '' }})
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
