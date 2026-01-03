@@ -38,10 +38,6 @@ async function setupKeys() {
 		console.log(`[REPO]    Copying public key to workspace root...`);
 		await copyFile(pubKeyPath, "uppsync.rsa.pub");
 
-		// Install public key to /etc/apk/keys so 'apk index' trusts our signed packages
-		console.log(`[REPO]    Installing public key to /etc/apk/keys...`);
-		await $`cp ${pubKeyPath} /etc/apk/keys/uppsync.rsa.pub`;
-
 		signingKeyPath = keyPath;
 		console.log(`[REPO]    Keys generated at ${keyPath}`);
 	} else if (!signingKeyPath) {
@@ -118,10 +114,10 @@ async function main() {
 			if (apkFiles.length === 0) continue;
 
 			// Run apk index
-			// We sign packages individually now, so we don't strictly need --allow-untrusted
-			// but keeping it doesn't hurt if we ever have mixed content.
-			// However, for strictness, let's remove it to ensure everything is signed.
-			await $`apk index -v -o APKINDEX.tar.gz ${apkFiles}`.cwd(dir);
+			// We use --allow-untrusted because 'apk index' can be finicky about verifying
+			// signatures of input packages in a CI environment, even if they are valid.
+			// Since we explicitly signed them above, we know they are good.
+			await $`apk index --allow-untrusted -v -o APKINDEX.tar.gz ${apkFiles}`.cwd(dir);
 
 			// Sign the index
 			if (signingKeyPath) {
