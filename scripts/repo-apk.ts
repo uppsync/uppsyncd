@@ -89,6 +89,12 @@ async function main() {
 
 		console.log(`[COPY]    ${f} -> ${targetDir}/`);
 		await copyFile(srcPath, dstPath);
+
+		// Sign the package individually (Professional Standard)
+		if (signingKeyPath) {
+			console.log(`[SIGN]    Signing ${f}...`);
+			await $`abuild-sign -k ${signingKeyPath} ${dstPath}`;
+		}
 	}
 
 	// 4. Generate Index
@@ -108,7 +114,10 @@ async function main() {
 			if (apkFiles.length === 0) continue;
 
 			// Run apk index
-			await $`apk index -o APKINDEX.tar.gz ${apkFiles}`.cwd(dir);
+			// We sign packages individually now, so we don't strictly need --allow-untrusted
+			// but keeping it doesn't hurt if we ever have mixed content.
+			// However, for strictness, let's remove it to ensure everything is signed.
+			await $`apk index -v -o APKINDEX.tar.gz ${apkFiles}`.cwd(dir);
 
 			// Sign the index
 			if (signingKeyPath) {
