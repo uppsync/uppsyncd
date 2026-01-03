@@ -389,7 +389,7 @@ jobs:
 
     steps:
       - name: Install Prerequisites
-        run: apk add --no-cache curl
+        run: apk add --no-cache curl gcompat
 
       - name: Add Repository Key
         run: |
