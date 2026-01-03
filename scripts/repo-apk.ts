@@ -10,7 +10,7 @@ const INPUT_DIR = "dist";
 // Default to 'stable', but allow override (e.g., 'unstable' for nightly)
 const CHANNEL = process.env.CHANNEL || "stable";
 const APK_PRIVATE_KEY = process.env.APK_PRIVATE_KEY; // Content of private key
-let signingKeyPath = process.env.APK_SIGNING_KEY; // Path to private key (optional fallback)
+let signingKeyPath: string | undefined;
 
 async function setupKeys() {
 	if (APK_PRIVATE_KEY) {
@@ -38,11 +38,15 @@ async function setupKeys() {
 		console.log(`[REPO]    Copying public key to workspace root...`);
 		await copyFile(pubKeyPath, "uppsync.rsa.pub");
 
+		// Install public key to /etc/apk/keys so 'apk index' trusts our signed packages
+		console.log(`[REPO]    Installing public key to /etc/apk/keys...`);
+		await $`sudo cp ${pubKeyPath} /etc/apk/keys/uppsync.rsa.pub`;
+
 		signingKeyPath = keyPath;
 		console.log(`[REPO]    Keys generated at ${keyPath}`);
 	} else if (!signingKeyPath) {
 		console.warn(
-			"[WARN]    No APK_PRIVATE_KEY or APK_SIGNING_KEY provided. Repository will not be signed.",
+			"[WARN]    No APK_PRIVATE_KEY provided. Repository will not be signed.",
 		);
 	}
 }
