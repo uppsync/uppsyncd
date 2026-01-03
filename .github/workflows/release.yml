@@ -20,66 +20,59 @@ permissions:
 
 jobs:
   package:
-    name: Package ${{ matrix.os }} (${{ matrix.arch }}${{ contains(matrix.bun_target, 'musl') && ', musl' || '' }})
+    name: Package ${{ matrix.asset_name }}
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
         include:
           # --- LINUX (Standard - glibc) ---
-          - os: "linux"
-            arch: "amd64"
+          - arch: "amd64"
             runner: "ubuntu-latest"
             bun_target: "bun-linux-x64"
-            asset_name: "${{ github.event.repository.name }}-linux-amd64"
+            asset_name: "linux-amd64"
             pack: "fpm"
             pack_formats: "deb rpm"
 
-          - os: "linux"
-            arch: "arm64"
+          - arch: "arm64"
             runner: "ubuntu-latest"
             bun_target: "bun-linux-arm64"
-            asset_name: "${{ github.event.repository.name }}-linux-arm64"
+            asset_name: "linux-arm64"
             pack: "fpm"
             pack_formats: "deb rpm"
 
           # --- LINUX (Alpine - musl) ---
-          - os: "linux"
-            arch: "amd64"
+          - arch: "amd64"
             runner: "ubuntu-latest"
             bun_target: "bun-linux-x64-musl"
-            asset_name: "${{ github.event.repository.name }}-linux-amd64-musl"
+            asset_name: "linux-amd64-musl"
             pack: "fpm"
             pack_formats: "apk"
 
-          - os: "linux"
-            arch: "arm64"
+          - arch: "arm64"
             runner: "ubuntu-latest"
             bun_target: "bun-linux-arm64-musl"
-            asset_name: "${{ github.event.repository.name }}-linux-arm64-musl"
+            asset_name: "linux-arm64-musl"
             pack: "fpm"
             pack_formats: "apk"
 
           # --- WINDOWS (Windows Runner) ---
-          - os: "windows"
-            arch: "amd64"
+          - arch: "amd64"
             runner: "windows-latest"
             bun_target: "bun-windows-x64"
-            asset_name: "${{ github.event.repository.name }}-windows-amd64"
+            asset_name: "windows-amd64"
             pack: "msi"
 
           # --- MACOS (Mac Runner) ---
-          - os: "darwin"
-            arch: "amd64" # Intel
+          - arch: "amd64" # Intel
             runner: "macos-15-intel"
             bun_target: "bun-darwin-x64-baseline"
-            asset_name: "${{ github.event.repository.name }}-darwin-amd64"
+            asset_name: "darwin-amd64"
             pack: "pkg"
 
-          - os: "darwin"
-            arch: "arm64" # Apple Silicon
+          - arch: "arm64" # Apple Silicon
             runner: "macos-latest"
             bun_target: "bun-darwin-arm64"
-            asset_name: "${{ github.event.repository.name }}-darwin-arm64"
+            asset_name: "darwin-arm64"
             pack: "pkg"
 
     steps:
@@ -100,21 +93,21 @@ jobs:
       - name: Build
         env:
           TARGET: ${{ matrix.bun_target }}
-          OUTFILE: dist/${{ matrix.asset_name }}
+          OUTFILE: dist/${{ github.event.repository.name }}-${{ matrix.asset_name }}
         run: bun run build
 
       - name: Package
         env:
           ARCH: ${{ matrix.arch }}
           VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '0.0.0-nightly' }}
-          OUTFILE: dist/${{ matrix.asset_name }}
+          OUTFILE: dist/${{ github.event.repository.name }}-${{ matrix.asset_name }}
           PACK_FORMATS: ${{ matrix.pack_formats }}
         run: bun run pack:${{ matrix.pack }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v6
         with:
-          name: assets-${{ matrix.os }}-${{ matrix.arch }}${{ contains(matrix.asset_name, 'musl') && '-musl' || '' }}
+          name: assets-${{ matrix.asset_name }}
           path: dist/*
           retention-days: 1
           if-no-files-found: ignore
@@ -459,40 +452,29 @@ jobs:
         run: bun run publish
 
   test-install-script:
-    name: Test install.sh (${{ matrix.distro }}-${{ matrix.arch }})
+    name: Test install.sh on ${{ matrix.distro }} (${{ matrix.arch }})
     needs: publish-install-script
     runs-on: ${{ matrix.runner }}
     container: ${{ matrix.image }}
     strategy:
       fail-fast: false
       matrix:
+        distro: [ubuntu, fedora, alpine]
+        arch: [amd64, arm64]
         include:
-          # --- AMD64 ---
-          - distro: ubuntu
-            arch: amd64
+          - arch: amd64
             runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+          - distro: ubuntu
             image: ubuntu:latest
           - distro: fedora
-            arch: amd64
-            runner: ubuntu-latest
             image: fedora:latest
           - distro: alpine
             arch: amd64
-            runner: ubuntu-latest
             image: alpine:latest
-
-          # --- ARM64 ---
-          - distro: ubuntu
-            arch: arm64
-            runner: ubuntu-24.04-arm
-            image: ubuntu:latest
-          - distro: fedora
-            arch: arm64
-            runner: ubuntu-24.04-arm
-            image: fedora:latest
           - distro: alpine
             arch: arm64
-            runner: ubuntu-24.04-arm
             image: arm64v8/alpine:latest
 
     steps:
