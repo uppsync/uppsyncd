@@ -22,3 +22,6 @@ deb:
 rpm:
   compression: "gzip"
   group: "System/Monitoring"
+
+apk:
+  compression: "gzip"

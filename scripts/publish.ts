@@ -83,46 +83,34 @@ async function main() {
 					CacheControl: cacheControl,
 				}),
 			);
-
-			// 5. Special Case: Promote .repo files to root
-			// This allows https://pkg.uppsync.com/uppsyncd.repo
-			if (filePath.endsWith(".repo")) {
-				const rootKey = relativePath.split("\\").join("/");
-				console.log(`[UPLOAD] ${rootKey} (ROOT COPY)`);
-				await s3.send(
-					new PutObjectCommand({
-						Bucket: BUCKET,
-						Key: rootKey,
-						Body: fileContent,
-						ContentType: mimeType,
-						CacheControl: "public, max-age=60, must-revalidate",
-					}),
-				);
-			}
 		}
 
 		console.log(`[SUCCESS] Repo upload complete.`);
 
 		// --- Upload Root GPG Key (if exists) ---
-		const rootGpgKey = "uppsync-main.gpg";
-		try {
-			const gpgStats = await stat(rootGpgKey);
-			if (gpgStats.isFile()) {
-				console.log(`[UPLOAD] ${rootGpgKey} (Root GPG Key)`);
-				const fileContent = await readFile(rootGpgKey);
-				await s3.send(
-					new PutObjectCommand({
-						Bucket: BUCKET,
-						Key: rootGpgKey, // Upload to root of bucket
-						Body: fileContent,
-						ContentType: "application/pgp-keys",
-						CacheControl: "public, max-age=3600, must-revalidate",
-					}),
-				);
-				console.log(`[SUCCESS] Root GPG Key uploaded.`);
+		const rootKeys = ["uppsync.gpg", "uppsync.rsa.pub"];
+		for (const keyFile of rootKeys) {
+			try {
+				const stats = await stat(keyFile);
+				if (stats.isFile()) {
+					console.log(`[UPLOAD] ${keyFile} (Root Key)`);
+					const fileContent = await readFile(keyFile);
+					await s3.send(
+						new PutObjectCommand({
+							Bucket: BUCKET,
+							Key: keyFile, // Upload to root of bucket
+							Body: fileContent,
+							ContentType: keyFile.endsWith(".pub")
+								? "text/plain"
+								: "application/pgp-keys",
+							CacheControl: "public, max-age=3600, must-revalidate",
+						}),
+					);
+					console.log(`[SUCCESS] Root Key '${keyFile}' uploaded.`);
+				}
+			} catch (_e) {
+				console.log(`[INFO]  No root '${keyFile}' found, skipping.`);
 			}
-		} catch (_e) {
-			console.log(`[INFO]  No root '${rootGpgKey}' found, skipping.`);
 		}
 	} catch (error) {
 		console.error("[ERROR] Upload failed:", error);

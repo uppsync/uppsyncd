@@ -89,7 +89,7 @@ try {
 // 5. Generate .repo file for easy installation
 // Result: https://pkg.uppsync.com/uppsyncd/uppsyncd.repo
 const repoFileName = `${REPO_NAME}.repo`;
-const repoFilePath = join(REPO_ROOT, repoFileName);
+const repoFilePath = join(RPM_ROOT, repoFileName);
 
 // If we have a key, we enforce checks. If not, we disable them.
 const checkStatus = GPG_KEY_ID ? "1" : "0";
@@ -100,7 +100,7 @@ baseurl=https://pkg.uppsync.com/${REPO_NAME}/rpm/stable
 enabled=1
 gpgcheck=${checkStatus}
 repo_gpgcheck=${checkStatus}
-gpgkey=https://pkg.uppsync.com/${REPO_OWNER}-main.gpg
+gpgkey=https://pkg.uppsync.com/${REPO_OWNER}.gpg
 
 [${REPO_NAME}-unstable]
 name=Uppsync agent (Unstable)
@@ -108,7 +108,7 @@ baseurl=https://pkg.uppsync.com/${REPO_NAME}/rpm/unstable
 enabled=0
 gpgcheck=${checkStatus}
 repo_gpgcheck=${checkStatus}
-gpgkey=https://pkg.uppsync.com/${REPO_OWNER}-main.gpg
+gpgkey=https://pkg.uppsync.com/${REPO_OWNER}.gpg
 `;
 
 console.log(`[RPM] Generating repo file at '${repoFilePath}'`);

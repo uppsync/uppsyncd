@@ -4,7 +4,7 @@ import { $, file } from "bun";
 // 1. Configuration
 const NFPM_EXPECTED_PATH = "dist/uppsyncd";
 const OUTPUT_DIR = "dist";
-const FORMATS = ["deb", "rpm"];
+const FORMATS = ["deb", "rpm", "apk"];
 
 // 2. Read Environment Variables
 const rawVersion = process.env.VERSION || "0.0.0-dev";

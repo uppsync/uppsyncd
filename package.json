@@ -11,6 +11,7 @@
 		"pack:pkg": "bun run scripts/pack-pkg.ts",
 		"repo:deb": "bun run scripts/repo-deb.ts",
 		"repo:rpm": "bun run scripts/repo-rpm.ts",
+		"repo:apk": "bun run scripts/repo-apk.ts",
 		"setup:gpg": "bun run scripts/setup-gpg.ts",
 		"publish": "bun run scripts/publish.ts",
 		"lint": "biome check .",

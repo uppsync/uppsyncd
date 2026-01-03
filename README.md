@@ -15,12 +15,12 @@
 2. **Add the GPG key:**
    ```bash
    sudo mkdir -p -m 0755 /etc/apt/keyrings
-   curl -fsSL https://pkg.uppsync.com/uppsync-main.gpg | sudo tee /etc/apt/keyrings/uppsync-main.gpg > /dev/null
+   curl -fsSL https://pkg.uppsync.com/uppsync.gpg | sudo tee /etc/apt/keyrings/uppsync.gpg > /dev/null
    ```
 
 3. **Add the repository:**
    ```bash
-   echo "deb [signed-by=/etc/apt/keyrings/uppsync-main.gpg] https://pkg.uppsync.com/uppsyncd stable main" \
+   echo "deb [signed-by=/etc/apt/keyrings/uppsync.gpg] https://pkg.uppsync.com/uppsyncd stable main" \
    | sudo tee /etc/apt/sources.list.d/uppsyncd.list
    ```
 
@@ -37,12 +37,33 @@
 
 1. **Add the repository:**
    ```bash
-   curl -fsSL https://pkg.uppsync.com/uppsyncd.repo | sudo tee /etc/yum.repos.d/uppsyncd.repo
+   curl -fsSL https://pkg.uppsync.com/uppsyncd/uppsyncd.repo | sudo tee /etc/yum.repos.d/uppsyncd.repo
    ```
 
 2. **Install the agent:**
    ```bash
    sudo dnf install uppsyncd
+   ```
+
+</details>
+
+<details>
+<summary>Linux (Alpine)</summary>
+
+1. **Add the signing key:**
+   ```bash
+   curl -fsSL https://pkg.uppsync.com/uppsync.rsa.pub -o /etc/apk/keys/uppsync.rsa.pub
+   ```
+
+2. **Add the repository:**
+   ```bash
+   echo "https://pkg.uppsync.com/uppsyncd/alpine/stable" >> /etc/apk/repositories
+   ```
+
+3. **Install the agent:**
+   ```bash
+   apk update
+   apk add uppsyncd
    ```
 
 </details>
