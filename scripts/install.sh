@@ -7,6 +7,33 @@ REPO_URL="https://pkg.uppsync.com/uppsyncd"
 GPG_KEY_URL="https://pkg.uppsync.com/uppsync.gpg"
 RSA_KEY_URL="https://pkg.uppsync.com/uppsync.rsa.pub"
 BINARY_URL_BASE="https://github.com/uppsync/uppsyncd/releases/latest/download"
+CHANNEL="stable"
+
+# Parse arguments
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --channel=*)
+            CHANNEL="${1#*=}"
+            ;;
+        --channel)
+            CHANNEL="$2"
+            shift
+            ;;
+        stable|unstable)
+            CHANNEL="$1"
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if [ "$CHANNEL" != "stable" ] && [ "$CHANNEL" != "unstable" ]; then
+    echo "Invalid channel: $CHANNEL. Must be 'stable' or 'unstable'."
+    exit 1
+fi
 
 # Determine if sudo is needed
 if [ "$(id -u)" -eq 0 ]; then
@@ -74,7 +101,7 @@ install_apt() {
     curl -fsSL "$GPG_KEY_URL" | $SUDO tee /etc/apt/keyrings/uppsync.gpg > /dev/null
 
     echo "Adding repository..."
-    echo "deb [signed-by=/etc/apt/keyrings/uppsync.gpg] $REPO_URL stable main" | $SUDO tee /etc/apt/sources.list.d/uppsyncd.list
+    echo "deb [signed-by=/etc/apt/keyrings/uppsync.gpg] $REPO_URL $CHANNEL main" | $SUDO tee /etc/apt/sources.list.d/uppsyncd.list
 
     echo "Installing uppsyncd..."
     $SUDO apt-get update
@@ -89,10 +116,18 @@ install_rpm() {
     curl -fsSL "$REPO_URL/uppsyncd.repo" | $SUDO tee /etc/yum.repos.d/uppsyncd.repo
 
     echo "Installing uppsyncd..."
-    if has_command dnf; then
-        $SUDO dnf install -y uppsyncd
+    if [ "$CHANNEL" = "unstable" ]; then
+        if has_command dnf; then
+            $SUDO dnf install -y --disablerepo=uppsyncd --enablerepo=uppsyncd-unstable uppsyncd
+        else
+            $SUDO yum install -y --disablerepo=uppsyncd --enablerepo=uppsyncd-unstable uppsyncd
+        fi
     else
-        $SUDO yum install -y uppsyncd
+        if has_command dnf; then
+            $SUDO dnf install -y uppsyncd
+        else
+            $SUDO yum install -y uppsyncd
+        fi
     fi
 }
 
@@ -104,8 +139,8 @@ install_apk() {
     curl -fsSL "$RSA_KEY_URL" | $SUDO tee /etc/apk/keys/uppsync.rsa.pub > /dev/null
 
     echo "Adding repository..."
-    if ! grep -q "$REPO_URL/alpine/stable" /etc/apk/repositories; then
-        echo "$REPO_URL/alpine/stable" | $SUDO tee -a /etc/apk/repositories > /dev/null
+    if ! grep -q "$REPO_URL/alpine/$CHANNEL" /etc/apk/repositories; then
+        echo "$REPO_URL/alpine/$CHANNEL" | $SUDO tee -a /etc/apk/repositories > /dev/null
     fi
 
     echo "Installing uppsyncd..."
@@ -114,6 +149,10 @@ install_apk() {
 }
 
 install_binary() {
+    if [ "$CHANNEL" = "unstable" ]; then
+        echo "Warning: Unstable channel not supported for static binary installation. Falling back to stable (latest release)."
+    fi
+
     echo "No supported package manager found. Installing static binary."
     install_curl
 
