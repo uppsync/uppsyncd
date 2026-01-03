@@ -8,6 +8,18 @@ GPG_KEY_URL="https://pkg.uppsync.com/uppsync.gpg"
 RSA_KEY_URL="https://pkg.uppsync.com/uppsync.rsa.pub"
 BINARY_URL_BASE="https://github.com/uppsync/uppsyncd/releases/latest/download"
 
+# Determine if sudo is needed
+if [ "$(id -u)" -eq 0 ]; then
+    SUDO=""
+else
+    if command -v sudo >/dev/null 2>&1; then
+        SUDO="sudo"
+    else
+        echo "Error: This script requires root privileges. Please run as root or install sudo."
+        exit 1
+    fi
+fi
+
 has_command() {
     command -v "$1" > /dev/null 2>&1
 }
@@ -37,15 +49,15 @@ install_curl() {
     if ! has_command curl; then
         echo "Installing curl..."
         if has_command apt-get; then
-            sudo apt-get update && sudo apt-get install -y curl
+            $SUDO apt-get update && $SUDO apt-get install -y curl
         elif has_command dnf; then
-            sudo dnf install -y curl
+            $SUDO dnf install -y curl
         elif has_command yum; then
-            sudo yum install -y curl
+            $SUDO yum install -y curl
         elif has_command apk; then
-            sudo apk add curl
+            $SUDO apk add curl
         elif has_command pacman; then
-            sudo pacman -Sy --noconfirm curl
+            $SUDO pacman -Sy --noconfirm curl
         else
             echo "curl is required but could not be installed. Please install curl manually."
             exit 1
@@ -58,15 +70,15 @@ install_apt() {
     install_curl
 
     echo "Adding GPG key..."
-    sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL "$GPG_KEY_URL" | sudo tee /etc/apt/keyrings/uppsync.gpg > /dev/null
+    $SUDO mkdir -p /etc/apt/keyrings
+    curl -fsSL "$GPG_KEY_URL" | $SUDO tee /etc/apt/keyrings/uppsync.gpg > /dev/null
 
     echo "Adding repository..."
-    echo "deb [signed-by=/etc/apt/keyrings/uppsync.gpg] $REPO_URL stable main" | sudo tee /etc/apt/sources.list.d/uppsyncd.list
+    echo "deb [signed-by=/etc/apt/keyrings/uppsync.gpg] $REPO_URL stable main" | $SUDO tee /etc/apt/sources.list.d/uppsyncd.list
 
     echo "Installing uppsyncd..."
-    sudo apt-get update
-    sudo apt-get install -y uppsyncd
+    $SUDO apt-get update
+    $SUDO apt-get install -y uppsyncd
 }
 
 install_rpm() {
@@ -74,13 +86,13 @@ install_rpm() {
     install_curl
 
     echo "Adding repository..."
-    curl -fsSL "$REPO_URL/uppsyncd.repo" | sudo tee /etc/yum.repos.d/uppsyncd.repo
+    curl -fsSL "$REPO_URL/uppsyncd.repo" | $SUDO tee /etc/yum.repos.d/uppsyncd.repo
 
     echo "Installing uppsyncd..."
     if has_command dnf; then
-        sudo dnf install -y uppsyncd
+        $SUDO dnf install -y uppsyncd
     else
-        sudo yum install -y uppsyncd
+        $SUDO yum install -y uppsyncd
     fi
 }
 
@@ -89,16 +101,16 @@ install_apk() {
     install_curl
 
     echo "Adding RSA key..."
-    curl -fsSL "$RSA_KEY_URL" | sudo tee /etc/apk/keys/uppsync.rsa.pub > /dev/null
+    curl -fsSL "$RSA_KEY_URL" | $SUDO tee /etc/apk/keys/uppsync.rsa.pub > /dev/null
 
     echo "Adding repository..."
     if ! grep -q "$REPO_URL/alpine/stable" /etc/apk/repositories; then
-        echo "$REPO_URL/alpine/stable" | sudo tee -a /etc/apk/repositories > /dev/null
+        echo "$REPO_URL/alpine/stable" | $SUDO tee -a /etc/apk/repositories > /dev/null
     fi
 
     echo "Installing uppsyncd..."
-    sudo apk update
-    sudo apk add uppsyncd
+    $SUDO apk update
+    $SUDO apk add uppsyncd
 }
 
 install_binary() {
@@ -114,7 +126,7 @@ install_binary() {
     chmod +x uppsyncd
 
     echo "Installing to /usr/local/bin..."
-    sudo mv uppsyncd /usr/local/bin/uppsyncd
+    $SUDO mv uppsyncd /usr/local/bin/uppsyncd
 }
 
 main() {
