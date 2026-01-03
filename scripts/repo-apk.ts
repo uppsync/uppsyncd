@@ -40,7 +40,7 @@ async function setupKeys() {
 
 		// Install public key to /etc/apk/keys so 'apk index' trusts our signed packages
 		console.log(`[REPO]    Installing public key to /etc/apk/keys...`);
-		await $`sudo cp ${pubKeyPath} /etc/apk/keys/uppsync.rsa.pub`;
+		await $`cp ${pubKeyPath} /etc/apk/keys/uppsync.rsa.pub`;
 
 		signingKeyPath = keyPath;
 		console.log(`[REPO]    Keys generated at ${keyPath}`);

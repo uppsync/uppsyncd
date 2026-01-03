@@ -89,7 +89,7 @@ try {
 // 5. Generate .repo file for easy installation
 // Result: https://pkg.uppsync.com/uppsyncd/uppsyncd.repo
 const repoFileName = `${REPO_NAME}.repo`;
-const repoFilePath = join(RPM_ROOT, repoFileName);
+const repoFilePath = join(REPO_ROOT, repoFileName);
 
 // If we have a key, we enforce checks. If not, we disable them.
 const checkStatus = GPG_KEY_ID ? "1" : "0";
