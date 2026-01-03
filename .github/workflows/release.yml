@@ -140,7 +140,7 @@ jobs:
 
   test-msi:
     name: Test MSI Install
-    needs: github-release
+    needs: package
     runs-on: windows-latest
 
     steps:
@@ -162,7 +162,7 @@ jobs:
 
   test-pkg:
     name: Test PKG Install (${{ matrix.arch }})
-    needs: github-release
+    needs: package
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
