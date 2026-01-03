@@ -138,8 +138,8 @@ jobs:
           draft: true
           files: dist/*
 
-  verify-msi:
-    name: Verify MSI Install
+  test-msi:
+    name: Test MSI Install
     needs: github-release
     runs-on: windows-latest
 
@@ -160,8 +160,8 @@ jobs:
           $env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")
           uppsyncd version
 
-  verify-pkg:
-    name: Verify PKG Install (${{ matrix.arch }})
+  test-pkg:
+    name: Test PKG Install (${{ matrix.arch }})
     needs: github-release
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -235,8 +235,8 @@ jobs:
           S3_SUBPATH: ${{ github.event.repository.name }}
         run: bun run publish
 
-  verify-apt:
-    name: Verify APT Install (${{ matrix.arch }})
+  test-apt:
+    name: Test APT Install (${{ matrix.arch }})
     needs: publish-apt
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -317,8 +317,8 @@ jobs:
           S3_SUBPATH: ${{ github.event.repository.name }}
         run: bun run publish
 
-  verify-rpm:
-    name: Verify RPM Install (${{ matrix.arch }})
+  test-rpm:
+    name: Test RPM Install (${{ matrix.arch }})
     needs: publish-rpm
     runs-on: ${{ matrix.runner }}
     container: fedora:latest
@@ -390,8 +390,8 @@ jobs:
           S3_SUBPATH: ${{ github.event.repository.name }}
         run: bun run publish
 
-  verify-apk:
-    name: Verify APK Install (${{ matrix.arch }})
+  test-apk:
+    name: Test APK Install (${{ matrix.arch }})
     needs: publish-apk
     runs-on: ${{ matrix.runner }}
     container: ${{ matrix.image }}
@@ -430,7 +430,7 @@ jobs:
 
   publish-install-script:
     name: Publish Install Script
-    needs: [verify-apt, verify-rpm, verify-apk]
+    needs: [test-apt, test-rpm, test-apk]
     runs-on: ubuntu-latest
 
     steps:
@@ -458,10 +458,11 @@ jobs:
           S3_SUBPATH: ${{ github.event.repository.name }}
         run: bun run publish
 
-  verify-install-script:
-    name: Verify Install Script (${{ matrix.distro }} - ${{ matrix.arch }})
+  test-install-script:
+    name: Test Install Script (${{ matrix.distro }}-${{ matrix.arch }})
     needs: publish-install-script
     runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.image }}
     strategy:
       fail-fast: false
       matrix:
@@ -493,8 +494,6 @@ jobs:
             arch: arm64
             runner: ubuntu-24.04-arm
             image: arm64v8/alpine:latest
-
-    container: ${{ matrix.image }}
 
     steps:
       - name: Install Prerequisites
@@ -646,8 +645,8 @@ jobs:
           echo "Inspecting Docker Hub image..."
           docker buildx imagetools inspect ${{ env.DOCKERHUB_IMAGE }}:${{ steps.meta.outputs.version }}
 
-  verify-docker:
-    name: Verify ${{ matrix.registry }} Image (${{ matrix.arch }})
+  test-docker:
+    name: Test ${{ matrix.registry }} Image (${{ matrix.arch }})
     needs: docker-merge
     runs-on: ${{ matrix.runner }}
     strategy:
