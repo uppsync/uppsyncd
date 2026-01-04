@@ -3,8 +3,7 @@ import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
-import { $ } from "bun";
-import semver from "semver";
+import { $, semver } from "bun";
 import pkg from "../../package.json";
 
 export async function update() {
@@ -24,7 +23,7 @@ export async function update() {
 		};
 		const latestVersion = release.tag_name.replace(/^v/, "");
 
-		if (semver.lte(latestVersion, pkg.version)) {
+		if (semver.order(latestVersion, pkg.version) <= 0) {
 			console.log("You are already on the latest version.");
 			return;
 		}
