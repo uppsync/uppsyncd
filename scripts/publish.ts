@@ -1,6 +1,6 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { S3Client } from "bun";
 import mime from "mime-types";
 
 // --- CONFIGURATION ---
@@ -23,13 +23,11 @@ if (!ENDPOINT || !BUCKET || !ACCESS_KEY || !SECRET_KEY) {
 }
 
 const s3 = new S3Client({
-	region: REGION,
+	accessKeyId: ACCESS_KEY,
+	secretAccessKey: SECRET_KEY,
 	endpoint: ENDPOINT,
-	credentials: {
-		accessKeyId: ACCESS_KEY,
-		secretAccessKey: SECRET_KEY,
-	},
-	forcePathStyle: true, // Required for generic S3/R2 compatibility
+	bucket: BUCKET,
+	region: REGION,
 });
 
 async function getFiles(dir: string): Promise<string[]> {
@@ -61,28 +59,13 @@ async function main() {
 			// 2. Determine Content Type
 			const mimeType = mime.lookup(filePath) || "application/octet-stream";
 
-			// 3. Determine Cache Strategy
-			// Binaries (.deb) = Cache forever (Immutable)
-			// Metadata (Release, Packages, GPG) = Cache short (Mutable)
-			let cacheControl = "public, max-age=60, must-revalidate";
-
-			if (filePath.endsWith(".deb")) {
-				cacheControl = "public, max-age=31536000, immutable";
-			}
-
 			console.log(`[UPLOAD] ${s3Key} (${mimeType})`);
 
-			// 4. Upload
-			const fileContent = await readFile(filePath);
-			await s3.send(
-				new PutObjectCommand({
-					Bucket: BUCKET,
-					Key: s3Key,
-					Body: fileContent,
-					ContentType: mimeType,
-					CacheControl: cacheControl,
-				}),
-			);
+			// 3. Upload
+			const file = Bun.file(filePath);
+			await s3.write(s3Key, file, {
+				type: mimeType,
+			});
 		}
 
 		console.log(`[SUCCESS] Repo upload complete.`);
@@ -90,25 +73,18 @@ async function main() {
 		// --- Upload Root GPG Key (if exists) ---
 		const rootKeys = ["uppsync.gpg", "uppsync.rsa.pub"];
 		for (const keyFile of rootKeys) {
-			try {
-				const stats = await stat(keyFile);
-				if (stats.isFile()) {
-					console.log(`[UPLOAD] ${keyFile} (Root Key)`);
-					const fileContent = await readFile(keyFile);
-					await s3.send(
-						new PutObjectCommand({
-							Bucket: BUCKET,
-							Key: keyFile, // Upload to root of bucket
-							Body: fileContent,
-							ContentType: keyFile.endsWith(".pub")
-								? "text/plain"
-								: "application/pgp-keys",
-							CacheControl: "public, max-age=3600, must-revalidate",
-						}),
-					);
-					console.log(`[SUCCESS] Root Key '${keyFile}' uploaded.`);
-				}
-			} catch (_e) {
+			const file = Bun.file(keyFile);
+			if (await file.exists()) {
+				console.log(`[UPLOAD] ${keyFile} (Root Key)`);
+				const contentType = keyFile.endsWith(".pub")
+					? "text/plain"
+					: "application/pgp-keys";
+
+				await s3.write(keyFile, file, {
+					type: contentType,
+				});
+				console.log(`[SUCCESS] Root Key '${keyFile}' uploaded.`);
+			} else {
 				console.log(`[INFO]  No root '${keyFile}' found, skipping.`);
 			}
 		}
