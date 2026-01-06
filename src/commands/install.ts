@@ -47,12 +47,14 @@ async function installLinux(
 
 	const serviceContent = `[Unit]
 Description=Uppsync Daemon
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=${command} run
+ExecStart=${command} run --metrics
 Restart=always
+RestartSec=5
 User=root
 
 [Install]
