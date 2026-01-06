@@ -114,7 +114,7 @@ jobs:
 
   github-release:
     name: Publish GitHub Release
-    needs: package
+    needs: [smoke-test, test-msi, test-pkg]
     runs-on: ubuntu-latest
 
     steps:
@@ -183,6 +183,10 @@ jobs:
     name: Smoke Test (Linux Binary)
     needs: package
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dist
+
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v7
@@ -192,33 +196,42 @@ jobs:
 
       - name: Prepare Binary
         run: |
-          mv dist/uppsyncd-linux-amd64 dist/uppsyncd
-          chmod +x dist/uppsyncd
+          mv uppsyncd-linux-amd64 uppsyncd
+          chmod +x uppsyncd
 
       - name: Verify Version
-        run: ./dist/uppsyncd version
+        run: ./uppsyncd version
 
       - name: Verify Help
-        run: ./dist/uppsyncd --help
+        run: ./uppsyncd --help
 
       - name: Verify Run
         run: |
           # Run for 5 seconds to ensure it starts up and collects metrics without crashing
           # "timeout" returns 124 if it kills the process, which is what we want
-          timeout 5s ./dist/uppsyncd run --metrics || [ $? -eq 124 ]
+          timeout 5s ./uppsyncd run --metrics || [ $? -eq 124 ]
 
-      - name: Verify Service Commands
-        run: |
-          sudo ./dist/uppsyncd install
-          sudo ./dist/uppsyncd start
-          sleep 2
-          sudo ./dist/uppsyncd status
-          sudo ./dist/uppsyncd stop
-          sudo ./dist/uppsyncd uninstall
+      - name: Verify Install (Service)
+        run: sudo ./uppsyncd install
+
+      - name: Verify Start (Service)
+        run: sudo ./uppsyncd start
+
+      - name: Wait for Service
+        run: sleep 2
+
+      - name: Verify Status (Service)
+        run: sudo ./uppsyncd status
+
+      - name: Verify Stop (Service)
+        run: sudo ./uppsyncd stop
+
+      - name: Verify Uninstall (Service)
+        run: sudo ./uppsyncd uninstall
 
   publish-apt:
     name: Publish APT Repository
-    needs: package
+    needs: [smoke-test]
     runs-on: ubuntu-latest
 
     steps:
@@ -299,7 +312,7 @@ jobs:
 
   publish-rpm:
     name: Publish RPM Repository
-    needs: package
+    needs: [smoke-test]
     runs-on: ubuntu-latest
 
     steps:
@@ -385,7 +398,7 @@ jobs:
 
   publish-apk:
     name: Publish APK Repository
-    needs: package
+    needs: [smoke-test]
     runs-on: ubuntu-latest
     container: oven/bun:alpine
 
@@ -536,7 +549,7 @@ jobs:
 
   docker-build:
     name: Docker Build (${{ matrix.arch }})
-    needs: package
+    needs: [smoke-test]
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
