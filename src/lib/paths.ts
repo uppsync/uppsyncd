@@ -13,6 +13,12 @@ export function getAppDataDir(): string {
 	} else if (platform === "darwin") {
 		appDataDir = path.join(homedir, "Library", "Application Support");
 	} else {
+		// If running as a service (systemd), use the state directory directly.
+		if (process.env.STATE_DIRECTORY) {
+			const dbDir = process.env.STATE_DIRECTORY;
+			fs.mkdirSync(dbDir, { recursive: true });
+			return dbDir;
+		}
 		appDataDir =
 			process.env.XDG_DATA_HOME || path.join(homedir, ".local", "share");
 	}
