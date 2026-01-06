@@ -180,9 +180,18 @@ jobs:
         run: uppsyncd version
 
   smoke-test:
-    name: Smoke Test (Linux Binary)
+    name: Smoke Test (linux-${{ matrix.arch }})
     needs: package
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+
     defaults:
       run:
         working-directory: dist
@@ -191,12 +200,12 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v7
         with:
-          name: assets-linux-amd64
+          name: assets-linux-${{ matrix.arch }}
           path: dist
 
       - name: Prepare Binary
         run: |
-          mv uppsyncd-linux-amd64 uppsyncd
+          mv uppsyncd-linux-${{ matrix.arch }} uppsyncd
           chmod +x uppsyncd
 
       - name: Verify Version
