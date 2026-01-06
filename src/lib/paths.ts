@@ -33,3 +33,11 @@ export function getAppDataDir(): string {
 export function getDatabasePath(dbName = "metrics.sqlite"): string {
 	return path.join(getAppDataDir(), dbName);
 }
+
+export function getPidFilePath(): string {
+	// Use standard /run directory on Linux for global locking
+	if (os.platform() === "linux") {
+		return "/run/uppsyncd.pid";
+	}
+	return path.join(getAppDataDir(), "uppsyncd.pid");
+}

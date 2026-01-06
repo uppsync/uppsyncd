@@ -25,13 +25,8 @@ export function startMetricsCollection() {
 		db.close();
 	};
 
-	process.on("SIGINT", () => {
+	process.on("exit", () => {
 		cleanup();
-		process.exit(0);
-	});
-	process.on("SIGTERM", () => {
-		cleanup();
-		process.exit(0);
 	});
 
 	const insertStmt = db.prepare(
@@ -90,7 +85,7 @@ export function startMetricsCollection() {
 				},
 			};
 
-			console.log("machines/metrics:", JSON.stringify(payload));
+			console.log("Metrics:", JSON.stringify(payload));
 			insertStmt.run(JSON.stringify(payload), Date.now());
 		} catch (error) {
 			console.error("Error collecting metrics:", error);
