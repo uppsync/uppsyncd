@@ -179,6 +179,43 @@ jobs:
       - name: Verify Version
         run: uppsyncd version
 
+  smoke-test:
+    name: Smoke Test (Linux Binary)
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: assets-linux-amd64
+          path: dist
+
+      - name: Prepare Binary
+        run: |
+          mv dist/uppsyncd-linux-amd64 dist/uppsyncd
+          chmod +x dist/uppsyncd
+
+      - name: Verify Version
+        run: ./dist/uppsyncd version
+
+      - name: Verify Help
+        run: ./dist/uppsyncd --help
+
+      - name: Verify Run
+        run: |
+          # Run for 5 seconds to ensure it starts up and collects metrics without crashing
+          # "timeout" returns 124 if it kills the process, which is what we want
+          timeout 5s ./dist/uppsyncd run --metrics || [ $? -eq 124 ]
+
+      - name: Verify Service Commands
+        run: |
+          sudo ./dist/uppsyncd install
+          sudo ./dist/uppsyncd start
+          sleep 2
+          sudo ./dist/uppsyncd status
+          sudo ./dist/uppsyncd stop
+          sudo ./dist/uppsyncd uninstall
+
   publish-apt:
     name: Publish APT Repository
     needs: package
