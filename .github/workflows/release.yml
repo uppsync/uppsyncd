@@ -226,9 +226,6 @@ jobs:
       - name: Verify Start (Service)
         run: sudo ./uppsyncd start
 
-      - name: Wait for Service
-        run: sleep 2
-
       - name: Verify Status (Service)
         run: sudo ./uppsyncd status
 
