@@ -3,6 +3,8 @@ FROM gcr.io/distroless/base-debian12:nonroot
 
 LABEL org.opencontainers.image.source="https://github.com/uppsync/uppsyncd"
 
+ENV STATE_DIRECTORY=/var/lib/uppsyncd
+
 # Arguments automatically provided by docker buildx
 ARG TARGETOS
 ARG TARGETARCH
