@@ -215,10 +215,12 @@ jobs:
         run: ./uppsyncd --help
 
       - name: Verify Run
+        env:
+          UPPSYNC_METRICS: "true"
         run: |
           # Run for 5 seconds to ensure it starts up and collects metrics without crashing
           # "timeout" returns 124 if it kills the process, which is what we want
-          timeout 5s ./uppsyncd run --metrics || [ $? -eq 124 ]
+          timeout 5s ./uppsyncd run || [ $? -eq 124 ]
 
       - name: Verify Install (Service)
         run: sudo ./uppsyncd install
