@@ -176,6 +176,8 @@ main() {
     echo "OS: $OS"
     echo "Arch: $ARCH"
 
+    set -x
+
     if has_command apt-get; then
         install_apt
     elif has_command dnf || has_command yum; then
@@ -186,8 +188,11 @@ main() {
         install_binary
     fi
 
-    echo "Installation complete!"
-    uppsyncd version
+    echo ""
+    echo "Installation complete! Log in to start using uppsyncd by running:"
+    echo ""
+    echo "sudo uppsyncd up"
+    echo ""
 }
 
 main
