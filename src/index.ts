@@ -6,14 +6,15 @@ const cli = cac("uppsyncd");
 
 cli
 	.command("up", "Install, configure, and start the uppsyncd service")
-	.option("--token [token]", "Uppsync token")
+	.option("--token [token]", "Auth token (skips interactive login)")
 	.option("--metrics", "Enable system metrics collection", { default: true })
 	.action(async (options: RunOptions) => {
+		console.log("Starting uppsyncd setup...", options);
 		if (!options.token) {
 			options.token = await actions.login();
 		}
-		await actions.install(options);
-		await actions.start();
+		const configChanged = await actions.install(options);
+		await actions.start(configChanged);
 	});
 
 cli.command("down", "Stop the uppsyncd service").action(actions.stop);
@@ -22,10 +23,7 @@ cli
 	.command("update", "Update uppsyncd to the latest version")
 	.action(actions.update);
 
-cli
-	.command("run", "Run uppsyncd in foreground")
-	.option("--metrics", "Enable system metrics collection")
-	.action(actions.run);
+cli.command("run", "Run uppsyncd in foreground").action(actions.run);
 
 cli.command("version", "Print version").action(actions.version);
 

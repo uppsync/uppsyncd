@@ -1,15 +1,38 @@
 import { $ } from "bun";
 
-export async function start() {
+export async function start(shouldRestart = false) {
 	if (process.platform !== "linux") {
-		console.error("Only Linux is supported for service control.");
+		console.error("Error: Service control is only supported on Linux.");
 		process.exit(1);
 	}
+
 	try {
+		if (shouldRestart) {
+			console.log("Configuration updated. Restarting uppsyncd service...");
+			await $`systemctl restart uppsyncd`;
+			console.log("✓ Service restarted successfully.");
+			return;
+		}
+
+		// Check if service is already running
+		const status = await $`systemctl is-active uppsyncd`.nothrow().quiet();
+
+		if (status.exitCode === 0) {
+			console.log("✓ uppsyncd service is already running.");
+			return;
+		}
+
+		console.log("Starting uppsyncd service...");
 		await $`systemctl start uppsyncd`;
-		console.log("Service started.");
-	} catch (e) {
-		console.error("Failed to start service:", e);
+		console.log("✓ Service started successfully.");
+	} catch (error) {
+		console.error("Error: Failed to manage uppsyncd service.");
+		if (error instanceof Error) {
+			console.error(`Details: ${error.message}`);
+			if (error.message.includes("Permission denied")) {
+				console.error("Hint: This command requires root privileges (sudo).");
+			}
+		}
 		process.exit(1);
 	}
 }

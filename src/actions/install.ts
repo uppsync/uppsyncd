@@ -1,7 +1,43 @@
-import { writeFileSync } from "node:fs";
+import {
+	existsSync,
+	readFileSync,
+	type WriteFileOptions,
+	writeFileSync,
+} from "node:fs";
 import { realpath } from "node:fs/promises";
 import { $ } from "bun";
 import type { RunOptions } from "../types";
+
+function writeIfChanged(
+	filePath: string,
+	newContent: string,
+	options?: WriteFileOptions,
+): boolean {
+	try {
+		// 1. Check if file exists
+		if (existsSync(filePath)) {
+			// 2. Read old content
+			const oldContent = readFileSync(filePath, "utf-8");
+			// 3. Compare
+			if (oldContent === newContent) {
+				return false; // No change needed
+			}
+		}
+
+		// 4. Write new content
+		writeFileSync(filePath, newContent, options);
+		return true; // Changed
+	} catch (e) {
+		// Handle permissions errors specifically
+		if ((e as { code?: string }).code === "EACCES") {
+			console.error(
+				`Permission denied writing to ${filePath}. Run as root/sudo.`,
+			);
+			process.exit(1);
+		}
+		throw e;
+	}
+}
 
 export async function install(options: RunOptions) {
 	const platform = process.platform;
@@ -23,15 +59,24 @@ export async function install(options: RunOptions) {
 	console.log(`Installing uppsyncd service on ${platform}...`);
 
 	try {
+		let changed = false;
+
 		if (platform === "linux") {
-			await installLinux(execPath, scriptPath, isBun, options);
+			changed = await installLinux(execPath, scriptPath, isBun, options);
 		} else {
 			console.error(
 				`Unsupported platform: ${platform}. Only Linux is supported.`,
 			);
 			process.exit(1);
 		}
-		console.log("uppsyncd service installed successfully.");
+
+		if (changed) {
+			console.log("Configuration updated successfully.");
+		} else {
+			console.log("Configuration is up to date.");
+		}
+
+		return changed;
 	} catch (error) {
 		console.error("Failed to install service:", error);
 		process.exit(1);
@@ -43,7 +88,7 @@ async function installLinux(
 	scriptPath: string,
 	isBun: boolean,
 	options: RunOptions,
-) {
+): Promise<boolean> {
 	const command = isBun ? `"${execPath}" "${scriptPath}"` : `"${execPath}"`;
 
 	const envPath = "/etc/default/uppsyncd";
@@ -71,17 +116,17 @@ StateDirectoryMode=0700
 WantedBy=multi-user.target
 `;
 
-	try {
-		writeFileSync(envPath, envContent, { mode: 0o600 });
-		writeFileSync(servicePath, serviceContent, { mode: 0o644 });
-	} catch (e) {
-		if ((e as { code?: string }).code === "EACCES") {
-			console.error("Permission denied. Please run as root/sudo.");
-			process.exit(1);
-		}
-		throw e;
+	const envChanged = writeIfChanged(envPath, envContent, { mode: 0o600 });
+	const serviceChanged = writeIfChanged(servicePath, serviceContent, {
+		mode: 0o644,
+	});
+
+	if (serviceChanged) {
+		console.log("Service definition changed, reloading daemon...");
+		await $`systemctl daemon-reload`;
 	}
 
-	await $`systemctl daemon-reload`;
 	await $`systemctl enable uppsyncd`;
+
+	return envChanged || serviceChanged;
 }

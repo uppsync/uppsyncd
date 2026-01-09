@@ -2,9 +2,8 @@ import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { $ } from "bun";
 import { startMetricsCollection } from "../lib/metrics";
 import { getPidFilePath } from "../lib/paths";
-import type { RunOptions } from "../types";
 
-export async function run(options: RunOptions) {
+export async function run() {
 	const pidFile = getPidFilePath();
 
 	// Try to handle existing PID file
@@ -73,7 +72,7 @@ export async function run(options: RunOptions) {
 
 	console.log(`Starting uppsyncd agent (PID: ${process.pid})...`);
 
-	if (options.metrics || process.env.UPPSYNC_METRICS === "true") {
+	if (process.env.UPPSYNC_METRICS === "true") {
 		startMetricsCollection();
 	} else {
 		console.log("uppsyncd agent is running (no metrics).");
