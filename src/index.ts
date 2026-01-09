@@ -9,7 +9,6 @@ cli
 	.option("--token [token]", "Uppsync token")
 	.option("--metrics", "Enable system metrics collection", { default: true })
 	.action(async (options: RunOptions) => {
-		console.log("Setting up uppsyncd service...", options);
 		if (!options.token) {
 			options.token = await actions.login();
 		}

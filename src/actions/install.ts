@@ -32,7 +32,6 @@ export async function install(options: RunOptions) {
 			process.exit(1);
 		}
 		console.log("uppsyncd service installed successfully.");
-		console.log("Run 'uppsyncd start' to start the service.");
 	} catch (error) {
 		console.error("Failed to install service:", error);
 		process.exit(1);
