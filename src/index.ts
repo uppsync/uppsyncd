@@ -1,27 +1,34 @@
 import { cac } from "cac";
-import * as commands from "./commands";
+import * as actions from "./actions";
+import type { RunOptions } from "./types";
 
 const cli = cac("uppsyncd");
 
 cli
-	.command("install", "Install uppsyncd as a system service")
-	.action(commands.install);
-cli
-	.command("uninstall", "Remove the uppsyncd system service")
-	.action(commands.uninstall);
-cli.command("start", "Start the uppsyncd service").action(commands.start);
-cli.command("stop", "Stop the uppsyncd service").action(commands.stop);
-cli.command("restart", "Restart the uppsyncd service").action(commands.restart);
-cli.command("status", "Show service status").action(commands.status);
+	.command("up", "Install, configure, and start the uppsyncd service")
+	.option("--token [token]", "Uppsync token")
+	.option("--metrics", "Enable system metrics collection", { default: true })
+	.action(async (options: RunOptions) => {
+		console.log("Setting up uppsyncd service...", options);
+		if (!options.token) {
+			options.token = await actions.login();
+		}
+		await actions.install(options);
+		await actions.start();
+	});
+
+cli.command("down", "Stop the uppsyncd service").action(actions.stop);
 
 cli
 	.command("update", "Update uppsyncd to the latest version")
-	.action(commands.update);
+	.action(actions.update);
+
 cli
-	.command("run", "Run uppsyncd in foreground (no service)")
-	.option("--metrics", "Enable metrics collection")
-	.action(commands.run);
-cli.command("version", "Print version").action(commands.version);
+	.command("run", "Run uppsyncd in foreground")
+	.option("--metrics", "Enable system metrics collection")
+	.action(actions.run);
+
+cli.command("version", "Print version").action(actions.version);
 
 cli.help();
 
@@ -34,4 +41,5 @@ try {
 		process.exit(1);
 	}
 	console.error(error);
+	process.exit(1);
 }

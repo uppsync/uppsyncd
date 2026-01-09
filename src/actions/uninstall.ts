@@ -26,13 +26,8 @@ async function removeLinux() {
 	const servicePath = "/etc/systemd/system/uppsyncd.service";
 
 	// Invoke stop if possible
-	try {
-		await $`systemctl stop uppsyncd`.quiet();
-	} catch {}
-
-	try {
-		await $`systemctl disable uppsyncd`.quiet();
-	} catch {}
+	await $`systemctl stop uppsyncd`.quiet().nothrow();
+	await $`systemctl disable uppsyncd`.quiet().nothrow();
 
 	if (existsSync(servicePath)) {
 		try {

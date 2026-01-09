@@ -1,8 +1,9 @@
 import { writeFileSync } from "node:fs";
 import { realpath } from "node:fs/promises";
 import { $ } from "bun";
+import type { RunOptions } from "../types";
 
-export async function install() {
+export async function install(options: RunOptions) {
 	const platform = process.platform;
 	const execPath = await realpath(process.execPath);
 	const isBun = execPath.endsWith("bun") || execPath.endsWith("bun.exe");
@@ -23,7 +24,7 @@ export async function install() {
 
 	try {
 		if (platform === "linux") {
-			await installLinux(execPath, scriptPath, isBun);
+			await installLinux(execPath, scriptPath, isBun, options);
 		} else {
 			console.error(
 				`Unsupported platform: ${platform}. Only Linux is supported.`,
@@ -42,18 +43,20 @@ async function installLinux(
 	execPath: string,
 	scriptPath: string,
 	isBun: boolean,
+	options: RunOptions,
 ) {
 	const command = isBun ? `"${execPath}" "${scriptPath}"` : `"${execPath}"`;
 
 	const serviceContent = `[Unit]
-Description=Uppsync Daemon
+Description=Uppsync node agent
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=simple
-ExecStart=${command} run --metrics
-Restart=always
+Type=notify
+EnvironmentFile=/etc/default/uppsyncd
+ExecStart=${command} run
+Restart=on-failure
 RestartSec=5
 StateDirectory=uppsyncd
 StateDirectoryMode=0700
@@ -62,9 +65,15 @@ StateDirectoryMode=0700
 WantedBy=multi-user.target
 `;
 	const servicePath = "/etc/systemd/system/uppsyncd.service";
+	const envPath = "/etc/default/uppsyncd";
+	const envContent = `# Managed by uppsyncd. Do not edit manually.
+UPPSYNC_TOKEN=${options.token}
+UPPSYNC_METRICS=${options.metrics ? "true" : "false"}
+`;
 
 	try {
-		writeFileSync(servicePath, serviceContent);
+		writeFileSync(servicePath, serviceContent, { mode: 0o644 });
+		writeFileSync(envPath, envContent, { mode: 0o600 });
 	} catch (e) {
 		if ((e as { code?: string }).code === "EACCES") {
 			console.error("Permission denied. Please run as root/sudo.");
