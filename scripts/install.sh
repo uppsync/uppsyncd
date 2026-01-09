@@ -51,6 +51,8 @@ has_command() {
     command -v "$1" > /dev/null 2>&1
 }
 
+trace() { set -x; "$@"; { set +x; } 2>/dev/null; }
+
 detect_os() {
     if [ -f /etc/os-release ]; then
         . /etc/os-release
@@ -76,15 +78,16 @@ install_curl() {
     if ! has_command curl; then
         echo "Installing curl..."
         if has_command apt-get; then
-            $SUDO apt-get update && $SUDO apt-get install -y curl
+            trace $SUDO apt-get update
+            trace $SUDO apt-get install -y curl
         elif has_command dnf; then
-            $SUDO dnf install -y curl
+            trace $SUDO dnf install -y curl
         elif has_command yum; then
-            $SUDO yum install -y curl
+            trace $SUDO yum install -y curl
         elif has_command apk; then
-            $SUDO apk add curl
+            trace $SUDO apk add curl
         elif has_command pacman; then
-            $SUDO pacman -Sy --noconfirm curl
+            trace $SUDO pacman -Sy --noconfirm curl
         else
             echo "curl is required but could not be installed. Please install curl manually."
             exit 1
@@ -94,61 +97,58 @@ install_curl() {
 
 install_apt() {
     echo "Detected APT package manager."
-    set -x
     install_curl
 
     echo "Adding GPG key..."
-    $SUDO mkdir -p /etc/apt/keyrings
-    curl -fsSL "$GPG_KEY_URL" | $SUDO tee /etc/apt/keyrings/uppsync.gpg > /dev/null
+    trace $SUDO mkdir -p /etc/apt/keyrings
+    trace curl -fsSL "$GPG_KEY_URL" | $SUDO tee /etc/apt/keyrings/uppsync.gpg > /dev/null
 
     echo "Adding repository..."
-    echo "deb [signed-by=/etc/apt/keyrings/uppsync.gpg] $REPO_URL $CHANNEL main" | $SUDO tee /etc/apt/sources.list.d/uppsyncd.list
+    trace echo "deb [signed-by=/etc/apt/keyrings/uppsync.gpg] $REPO_URL $CHANNEL main" | $SUDO tee /etc/apt/sources.list.d/uppsyncd.list
 
     echo "Installing uppsyncd..."
-    $SUDO apt-get update
-    $SUDO apt-get install -y uppsyncd
+    trace $SUDO apt-get update
+    trace $SUDO apt-get install -y uppsyncd
 }
 
 install_rpm() {
     echo "Detected RPM package manager."
-    set -x
     install_curl
 
     echo "Adding repository..."
-    curl -fsSL "$REPO_URL/uppsyncd.repo" | $SUDO tee /etc/yum.repos.d/uppsyncd.repo
+    trace curl -fsSL "$REPO_URL/uppsyncd.repo" | $SUDO tee /etc/yum.repos.d/uppsyncd.repo
 
     echo "Installing uppsyncd..."
     if [ "$CHANNEL" = "unstable" ]; then
         if has_command dnf; then
-            $SUDO dnf install -y --disablerepo=uppsyncd --enablerepo=uppsyncd-unstable uppsyncd
+            trace $SUDO dnf install -y --disablerepo=uppsyncd --enablerepo=uppsyncd-unstable uppsyncd
         else
-            $SUDO yum install -y --disablerepo=uppsyncd --enablerepo=uppsyncd-unstable uppsyncd
+            trace $SUDO yum install -y --disablerepo=uppsyncd --enablerepo=uppsyncd-unstable uppsyncd
         fi
     else
         if has_command dnf; then
-            $SUDO dnf install -y uppsyncd
+            trace $SUDO dnf install -y uppsyncd
         else
-            $SUDO yum install -y uppsyncd
+            trace $SUDO yum install -y uppsyncd
         fi
     fi
 }
 
 install_apk() {
     echo "Detected APK package manager."
-    set -x
     install_curl
 
     echo "Adding RSA key..."
-    curl -fsSL "$RSA_KEY_URL" | $SUDO tee /etc/apk/keys/uppsync.rsa.pub > /dev/null
+    trace curl -fsSL "$RSA_KEY_URL" | $SUDO tee /etc/apk/keys/uppsync.rsa.pub > /dev/null
 
     echo "Adding repository..."
     if ! grep -q "$REPO_URL/alpine/$CHANNEL" /etc/apk/repositories; then
-        echo "$REPO_URL/alpine/$CHANNEL" | $SUDO tee -a /etc/apk/repositories > /dev/null
+        trace echo "$REPO_URL/alpine/$CHANNEL" | $SUDO tee -a /etc/apk/repositories > /dev/null
     fi
 
     echo "Installing uppsyncd..."
-    $SUDO apk update
-    $SUDO apk add uppsyncd
+    trace $SUDO apk update
+    trace $SUDO apk add uppsyncd
 }
 
 install_binary() {
@@ -157,7 +157,6 @@ install_binary() {
     fi
 
     echo "No supported package manager found. Installing static binary."
-    set -x
     install_curl
 
     BINARY_NAME="uppsyncd-linux-$ARCH"
@@ -165,11 +164,11 @@ install_binary() {
     DOWNLOAD_URL="$BINARY_URL_BASE/$BINARY_NAME"
 
     echo "Downloading $DOWNLOAD_URL..."
-    curl -fsSL "$DOWNLOAD_URL" -o uppsyncd
-    chmod +x uppsyncd
+    trace curl -fsSL "$DOWNLOAD_URL" -o uppsyncd
+    trace chmod +x uppsyncd
 
     echo "Installing to /usr/local/bin..."
-    $SUDO mv uppsyncd /usr/local/bin/uppsyncd
+    trace $SUDO mv uppsyncd /usr/local/bin/uppsyncd
 }
 
 main() {
