@@ -46,6 +46,13 @@ async function installLinux(
 ) {
 	const command = isBun ? `"${execPath}" "${scriptPath}"` : `"${execPath}"`;
 
+	const envPath = "/etc/default/uppsyncd";
+	const envContent = `# Managed by uppsyncd. Do not edit manually.
+UPPSYNC_TOKEN=${options.token}
+UPPSYNC_METRICS=${options.metrics ? "true" : "false"}
+`;
+
+	const servicePath = "/etc/systemd/system/uppsyncd.service";
 	const serviceContent = `[Unit]
 Description=Uppsync node agent
 After=network-online.target
@@ -53,7 +60,7 @@ Wants=network-online.target
 
 [Service]
 Type=notify
-EnvironmentFile=/etc/default/uppsyncd
+EnvironmentFile=${envPath}
 ExecStart=${command} run
 Restart=on-failure
 RestartSec=5
@@ -63,16 +70,10 @@ StateDirectoryMode=0700
 [Install]
 WantedBy=multi-user.target
 `;
-	const servicePath = "/etc/systemd/system/uppsyncd.service";
-	const envPath = "/etc/default/uppsyncd";
-	const envContent = `# Managed by uppsyncd. Do not edit manually.
-UPPSYNC_TOKEN=${options.token}
-UPPSYNC_METRICS=${options.metrics ? "true" : "false"}
-`;
 
 	try {
-		writeFileSync(servicePath, serviceContent, { mode: 0o644 });
 		writeFileSync(envPath, envContent, { mode: 0o600 });
+		writeFileSync(servicePath, serviceContent, { mode: 0o644 });
 	} catch (e) {
 		if ((e as { code?: string }).code === "EACCES") {
 			console.error("Permission denied. Please run as root/sudo.");
