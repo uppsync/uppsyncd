@@ -94,6 +94,7 @@ install_curl() {
 
 install_apt() {
     echo "Detected APT package manager."
+    set -x
     install_curl
 
     echo "Adding GPG key..."
@@ -110,6 +111,7 @@ install_apt() {
 
 install_rpm() {
     echo "Detected RPM package manager."
+    set -x
     install_curl
 
     echo "Adding repository..."
@@ -133,6 +135,7 @@ install_rpm() {
 
 install_apk() {
     echo "Detected APK package manager."
+    set -x
     install_curl
 
     echo "Adding RSA key..."
@@ -154,6 +157,7 @@ install_binary() {
     fi
 
     echo "No supported package manager found. Installing static binary."
+    set -x
     install_curl
 
     BINARY_NAME="uppsyncd-linux-$ARCH"
@@ -175,8 +179,6 @@ main() {
     echo "Uppsync Installer"
     echo "OS: $OS"
     echo "Arch: $ARCH"
-
-    set -x
 
     if has_command apt-get; then
         install_apt
