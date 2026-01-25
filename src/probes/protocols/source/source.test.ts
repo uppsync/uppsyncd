@@ -86,6 +86,20 @@ describe("SourceClient", () => {
 		expect(list[0]?.name).toBe("Bob");
 	});
 
+	it("should parse A2S_RULES", async () => {
+		// Header 0x45 + Count(2) + "R1"="V1" + "R2"="V2"
+		const response = packet(0x45, "0200 523100 563100 523200 563200");
+
+		mockSend.mockImplementation(async (_d, _p, _i, _t, validator) =>
+			validator(response, [response]),
+		);
+
+		const rules = await client.getRules();
+		expect(rules).toHaveLength(2);
+		expect(rules[0]).toEqual({ name: "R1", value: "V1" });
+		expect(rules[1]).toEqual({ name: "R2", value: "V2" });
+	});
+
 	it("should reassemble Source Split (12-byte header)", async () => {
 		const chunks = createSplits(
 			0x49,
