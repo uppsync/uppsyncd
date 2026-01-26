@@ -9,7 +9,7 @@ export type UdpClient = {
 	send: (
 		data: Buffer,
 		port: number,
-		ip: string,
+		host: string,
 		timeoutMs?: number,
 		validate?: (chunk: Buffer, accumulated: Buffer[]) => Buffer | false,
 	) => Promise<Buffer>;
@@ -21,7 +21,7 @@ export async function createUdpClient(): Promise<UdpClient> {
 
 	const socket = await Bun.udpSocket({
 		socket: {
-			// Prefix with _ to indicate unused parameter
+			// _socket implies unused parameter
 			data(_socket, rawBuffer) {
 				if (!pending) return;
 
@@ -57,7 +57,20 @@ export async function createUdpClient(): Promise<UdpClient> {
 	});
 
 	return {
-		send: (data, port, ip, timeoutMs = 2000, validate) => {
+		send: async (data, port, host, timeoutMs = 2000, validate) => {
+			// 1. DNS Resolution
+			let ip = host;
+			try {
+				const addresses = await Bun.dns.lookup(host);
+				// Safe access check
+				if (addresses.length > 0 && addresses[0]) {
+					ip = addresses[0].address;
+				}
+			} catch (_e) {
+				// Ignore DNS failure, socket.send will likely throw if invalid
+			}
+
+			// 2. Send & Await
 			return new Promise((resolve, reject) => {
 				if (pending) {
 					reject(new Error("Socket is busy"));
@@ -67,16 +80,17 @@ export async function createUdpClient(): Promise<UdpClient> {
 				pending = { resolve, reject, validate, accumulated: [] };
 
 				const sent = socket.send(data, port, ip);
+
 				if (!sent) {
 					pending = null;
-					reject(new Error("Failed to send packet"));
+					reject(new Error(`Failed to send packet to ${host} (${ip})`));
 					return;
 				}
 
 				setTimeout(() => {
 					if (pending) {
 						pending.reject(
-							new Error(`Timeout waiting for response from ${ip}:${port}`),
+							new Error(`Timeout waiting for response from ${host}:${port}`),
 						);
 						pending = null;
 					}

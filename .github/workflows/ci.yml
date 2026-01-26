@@ -62,7 +62,7 @@ jobs:
         run: bun install
 
       - name: Run Tests
-        run: bun test
+        run: bun test --coverage
 
   build:
     name: Build on ${{ matrix.os }}

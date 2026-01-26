@@ -24,7 +24,7 @@ const PAYLOADS = {
 	CHALLENGE_INIT: Buffer.from([0xff, 0xff, 0xff, 0xff]),
 };
 
-export class SourceClient {
+export class SourceClient implements AsyncDisposable {
 	private client: UdpClient | null = null;
 
 	constructor(
@@ -32,8 +32,10 @@ export class SourceClient {
 		private port: number,
 	) {}
 
-	async connect() {
-		this.client = await createUdpClient();
+	private async ensureConnection() {
+		if (!this.client) {
+			this.client = await createUdpClient();
+		}
 	}
 
 	close() {
@@ -41,8 +43,15 @@ export class SourceClient {
 		this.client = null;
 	}
 
+	async [Symbol.asyncDispose]() {
+		this.close();
+	}
+
+	// --- PACKET VALIDATION LOGIC ---
+
 	private matchesExpected(buffer: Buffer, expectedHeader: number): boolean {
 		let payload = buffer;
+
 		if (payload.length >= 4 && payload.readInt32LE(0) === HEADERS.SINGLE) {
 			payload = payload.subarray(4);
 		}
@@ -61,9 +70,9 @@ export class SourceClient {
 		expectedHeader: number,
 	): Buffer | false {
 		const first = allChunks[0];
-		if (!first) return false; // Guard against undefined
+		if (!first) return false;
 
-		// Packed Byte 8: High Nibble=Index, Low Nibble=Total
+		// GoldSrc: Packed Byte 8 (High Nibble=Index, Low Nibble=Total)
 		const total = first.readUInt8(8) & 0x0f;
 
 		if (allChunks.length < total) return false;
@@ -81,9 +90,10 @@ export class SourceClient {
 		expectedHeader: number,
 	): Buffer | false {
 		const first = allChunks[0];
-		if (!first) return false; // Guard against undefined
+		if (!first) return false;
 
-		const total = first.readUInt8(8); // Byte 8 is Total
+		// Source: Byte 8 is Total
+		const total = first.readUInt8(8);
 
 		if (allChunks.length < total) return false;
 
@@ -107,11 +117,11 @@ export class SourceClient {
 		}
 
 		if (header === HEADERS.SPLIT) {
-			// Guard: Ensure we have at least one chunk and it's long enough
 			const firstChunk = allChunks[0];
+			// FIX: Explicit check ensures safety without non-null assertion (!)
 			if (!firstChunk || firstChunk.length < 9) return false;
 
-			// Try both reassembly strategies
+			// Strategy: Try GoldSrc first (packed byte), then Source
 			const goldResult = this.tryGoldSrcReassembly(allChunks, expectedHeader);
 			if (goldResult) return goldResult;
 
@@ -124,12 +134,15 @@ export class SourceClient {
 		return false;
 	}
 
+	// --- CORE QUERY LOGIC ---
+
 	private async query(
 		reqHeader: Buffer,
 		payload: Buffer,
 		expectedResp: number,
 	): Promise<Buffer> {
-		if (!this.client) throw new Error("Client not connected");
+		await this.ensureConnection();
+		if (!this.client) throw new Error("Client failed to initialize");
 
 		const packet = Buffer.concat([reqHeader, payload]);
 		const validator = (c: Buffer, a: Buffer[]) =>
@@ -147,6 +160,7 @@ export class SourceClient {
 			response = response.subarray(4);
 		}
 
+		// Challenge Loop
 		let attempts = 0;
 		while (
 			response.length > 0 &&
