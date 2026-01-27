@@ -5,7 +5,7 @@ import { MinecraftJavaClient } from "./client";
 const mockSend = mock();
 const mockClose = mock();
 
-mock.module("../../../lib/tcp-client", () => ({
+mock.module("../../lib/tcp-client", () => ({
 	createTcpClient: async () => ({ send: mockSend, close: mockClose }),
 }));
 

@@ -1,5 +1,5 @@
-import { BufferReader } from "../../../lib/buffer-reader";
-import { createTcpClient } from "../../../lib/tcp-client";
+import { BufferReader } from "../../lib/buffer-reader";
+import { createTcpClient } from "../../lib/tcp-client";
 
 export interface JavaStatus {
 	version: { name: string; protocol: number };

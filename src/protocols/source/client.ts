@@ -1,4 +1,4 @@
-import { createUdpClient, type UdpClient } from "../../../lib/udp-client";
+import { createUdpClient, type UdpClient } from "../../lib/udp-client";
 import { parseInfo, parsePlayers, parseRules } from "./parsers";
 
 const HEADERS = {

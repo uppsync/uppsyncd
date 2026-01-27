@@ -1,4 +1,4 @@
-import { BufferReader } from "../../../lib/buffer-reader";
+import { BufferReader } from "../../lib/buffer-reader";
 
 // --- TYPES ---
 

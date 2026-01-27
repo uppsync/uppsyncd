@@ -6,7 +6,7 @@ import { parseInfo } from "./parsers";
 const mockSend = mock();
 const mockClose = mock();
 
-mock.module("../../../lib/udp-client", () => ({
+mock.module("../../lib/udp-client", () => ({
 	createUdpClient: async () => ({ send: mockSend, close: mockClose }),
 }));
 

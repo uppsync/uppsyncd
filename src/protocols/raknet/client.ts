@@ -1,5 +1,5 @@
-import { BufferReader } from "../../../lib/buffer-reader";
-import { createUdpClient } from "../../../lib/udp-client";
+import { BufferReader } from "../../lib/buffer-reader";
+import { createUdpClient } from "../../lib/udp-client";
 
 const MAGIC = Buffer.from("00ffff00fefefefefdfdfdfd12345678", "hex");
 
