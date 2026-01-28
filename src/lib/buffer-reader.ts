@@ -1,7 +1,42 @@
 export class BufferReader {
-	private offset = 0;
+	private _offset = 0;
 
 	constructor(private buffer: Buffer) {}
+
+	/**
+	 * Returns the current cursor position.
+	 */
+	get offset(): number {
+		return this._offset;
+	}
+
+	/**
+	 * Manually move the cursor to a specific position.
+	 */
+	seek(position: number): this {
+		if (position < 0 || position > this.buffer.length) {
+			throw new Error(`Invalid seek position: ${position}`);
+		}
+		this._offset = position;
+		return this;
+	}
+
+	/**
+	 * Move the cursor forward by N bytes.
+	 */
+	skip(bytes: number): this {
+		this.seek(this._offset + bytes);
+		return this;
+	}
+
+	/**
+	 * Look at the next byte without advancing the cursor.
+	 * Solves the GameSpy 2/3 "delimiter check" problem.
+	 */
+	peek(): number {
+		this.checkBounds(1);
+		return this.buffer.readUInt8(this._offset);
+	}
 
 	// ==========================================
 	// Core Reading Methods
@@ -12,8 +47,8 @@ export class BufferReader {
 	 */
 	readByte(): number {
 		this.checkBounds(1);
-		const val = this.buffer.readUInt8(this.offset);
-		this.offset += 1;
+		const val = this.buffer.readUInt8(this._offset);
+		this._offset += 1;
 		return val;
 	}
 
@@ -22,7 +57,7 @@ export class BufferReader {
 	 * @param length Number of bytes to read. If omitted, reads until the end.
 	 */
 	readBytes(length?: number): Buffer {
-		const start = this.offset;
+		const start = this._offset;
 		const end = length !== undefined ? start + length : this.buffer.length;
 
 		if (end > this.buffer.length)
@@ -31,7 +66,7 @@ export class BufferReader {
 			);
 
 		const slice = this.buffer.subarray(start, end);
-		this.offset = end;
+		this._offset = end;
 		return slice;
 	}
 
@@ -44,8 +79,8 @@ export class BufferReader {
 	 */
 	readInt(): number {
 		this.checkBounds(4);
-		const val = this.buffer.readInt32LE(this.offset);
-		this.offset += 4;
+		const val = this.buffer.readInt32LE(this._offset);
+		this._offset += 4;
 		return val;
 	}
 
@@ -54,8 +89,8 @@ export class BufferReader {
 	 */
 	readShort(): number {
 		this.checkBounds(2);
-		const val = this.buffer.readInt16LE(this.offset);
-		this.offset += 2;
+		const val = this.buffer.readInt16LE(this._offset);
+		this._offset += 2;
 		return val;
 	}
 
@@ -64,8 +99,8 @@ export class BufferReader {
 	 */
 	readLong(): bigint {
 		this.checkBounds(8);
-		const val = this.buffer.readBigUInt64LE(this.offset);
-		this.offset += 8;
+		const val = this.buffer.readBigUInt64LE(this._offset);
+		this._offset += 8;
 		return val;
 	}
 
@@ -74,8 +109,8 @@ export class BufferReader {
 	 */
 	readFloat(): number {
 		this.checkBounds(4);
-		const val = this.buffer.readFloatLE(this.offset);
-		this.offset += 4;
+		const val = this.buffer.readFloatLE(this._offset);
+		this._offset += 4;
 		return val;
 	}
 
@@ -83,11 +118,16 @@ export class BufferReader {
 	 * Reads a Null-Terminated string (Source Engine style).
 	 * Reads until 0x00 is found.
 	 */
-	readString(): string {
-		const end = this.buffer.indexOf(0x00, this.offset);
-		if (end === -1) return "";
-		const str = this.buffer.toString("utf-8", this.offset, end);
-		this.offset = end + 1; // Advance past the null byte
+	readString(encoding: BufferEncoding = "utf-8"): string {
+		const end = this.buffer.indexOf(0x00, this._offset);
+		if (end === -1) {
+			// If no null found, read the rest of the buffer
+			const str = this.buffer.toString(encoding, this._offset);
+			this._offset = this.buffer.length;
+			return str;
+		}
+		const str = this.buffer.toString(encoding, this._offset, end);
+		this._offset = end + 1;
 		return str;
 	}
 
@@ -101,8 +141,8 @@ export class BufferReader {
 	 */
 	readUInt16BE(): number {
 		this.checkBounds(2);
-		const val = this.buffer.readUInt16BE(this.offset);
-		this.offset += 2;
+		const val = this.buffer.readUInt16BE(this._offset);
+		this._offset += 2;
 		return val;
 	}
 

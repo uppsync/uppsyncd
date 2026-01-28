@@ -14,8 +14,8 @@ export interface JavaStatus {
 
 export class MinecraftJavaClient {
 	constructor(
-		private ip: string,
-		private port: number,
+		private readonly host: string,
+		private readonly port: number,
 	) {}
 
 	/**
@@ -53,7 +53,7 @@ export class MinecraftJavaClient {
 	}
 
 	async getStatus(): Promise<JavaStatus> {
-		const client = await createTcpClient(this.ip, this.port);
+		const client = await createTcpClient(this.host, this.port);
 
 		try {
 			// --- 1. Handshake (ID 0x00, State 1) ---
@@ -63,7 +63,7 @@ export class MinecraftJavaClient {
 			const handshakeBody = Buffer.concat([
 				Buffer.from([0x00]),
 				this.varInt(47), // Proto 47 (1.8)
-				this.varString(this.ip),
+				this.varString(this.host),
 				portBuf,
 				this.varInt(1), // 1 = Status
 			]);

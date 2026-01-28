@@ -17,8 +17,8 @@ export interface BedrockStatus {
 
 export class RaknetClient {
 	constructor(
-		private ip: string,
-		private port: number,
+		private readonly host: string,
+		private readonly port: number,
 	) {}
 
 	async getStatus(): Promise<BedrockStatus> {
@@ -34,7 +34,7 @@ export class RaknetClient {
 				Buffer.alloc(8),
 			]);
 
-			const response = await client.send(packet, this.port, this.ip, 2000);
+			const response = await client.send(packet, this.port, this.host, 2000);
 
 			// --- 2. Parse Unconnected Pong ---
 			// ID (0x1C) | Time (8b) | ServerGUID (8b) | Magic (16b) | StringLen (2b) | String

@@ -28,8 +28,8 @@ export class SourceClient implements AsyncDisposable {
 	private client: UdpClient | null = null;
 
 	constructor(
-		private ip: string,
-		private port: number,
+		private readonly host: string,
+		private readonly port: number,
 	) {}
 
 	private async ensureConnection() {
@@ -151,7 +151,7 @@ export class SourceClient implements AsyncDisposable {
 		let response = await this.client.send(
 			packet,
 			this.port,
-			this.ip,
+			this.host,
 			2000,
 			validator,
 		);
@@ -177,7 +177,7 @@ export class SourceClient implements AsyncDisposable {
 			response = await this.client.send(
 				finalPacket,
 				this.port,
-				this.ip,
+				this.host,
 				2000,
 				validator,
 			);

@@ -1,6 +1,6 @@
 import { createUdpClient } from "../../lib/udp-client";
 
-export interface GameSpy1StatusResponse {
+export interface GameSpy1Status {
 	info: Record<string, string>;
 	players: Record<string, string>[];
 	teams: Record<string, string>[];
@@ -8,8 +8,8 @@ export interface GameSpy1StatusResponse {
 
 export class GameSpy1Client {
 	constructor(
-		private ip: string,
-		private port: number,
+		private readonly host: string,
+		private readonly port: number,
 	) {}
 
 	/**
@@ -27,7 +27,7 @@ export class GameSpy1Client {
 			const response = await client.send(
 				payload,
 				this.port,
-				this.ip,
+				this.host,
 				3000,
 				(_chunk, accumulated) => {
 					const total = Buffer.concat(accumulated);
@@ -62,7 +62,7 @@ export class GameSpy1Client {
 		}
 	}
 
-	async getStatus(useXServerQuery = false): Promise<GameSpy1StatusResponse> {
+	async getStatus(useXServerQuery = false): Promise<GameSpy1Status> {
 		const cmd = useXServerQuery ? "\\status\\xserverquery\\" : "\\status\\";
 		let raw: Record<string, string>;
 		try {
@@ -130,7 +130,7 @@ export class GameSpy1Client {
 
 	// --- Helpers ---
 
-	private splitResponse(raw: Record<string, string>): GameSpy1StatusResponse {
+	private splitResponse(raw: Record<string, string>): GameSpy1Status {
 		const info: Record<string, string> = {};
 		const playersMap: Record<number, Record<string, string>> = {};
 		const teamsMap: Record<number, Record<string, string>> = {};
